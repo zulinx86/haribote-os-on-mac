@@ -9,7 +9,7 @@
 
 	; BIOS Parameter Block (BPB)
 	; FAT12/16/32 common fileds
-	db "HELLOIPL"		; OEM identifier
+	db "HARIBOTE"		; OEM identifier
 	dw 512				; Number of bytes per sector
 	db 1				; Number of sectors per cluster
 	dw 1				; Number of reserved sectors
@@ -27,7 +27,7 @@
 	db 0				; Reserved
 	db 0x29				; Extended boot signature
 	dd 0xffffffff		; Volume serial number
-	db "HELLO-OS   "	; 11-byte volume label
+	db "HARIBOTE OS"	; 11-byte volume label
 	db "FAT12   "		; FAT filesystem type
 	times 18 db 0
 
@@ -41,7 +41,26 @@ entry:
 	mov ds,ax
 	mov es,ax
 
-	; Display a message
+	; Read sectors after boot sector
+	mov ax,0x0820
+	mov es,ax		; segment for output buffer
+	mov ch,0		; cylinder (0 - 79)
+	mov dh,0		; head (0 - 1)
+	mov cl,2		; sector (1 - 18)
+
+	mov ah,0x02		; function to read
+	mov al,1		; number of sectors
+	mov bx,0		; offset address for output buffer
+	mov dl,0x00		; drive number
+	int 0x13		; BIOS interruption for mass storage access
+	jc error
+
+fin:
+	hlt
+	jmp fin
+
+	; Display an error message
+error:
 	mov si,msg
 putloop:
 	mov al,[si]
@@ -52,13 +71,10 @@ putloop:
 	mov bx,0x000f
 	int 0x10
 	jmp putloop
-fin:
-	hlt
-	jmp fin
 
 msg:
 	db 0x0a,0x0a
-	db "hello, world"
+	db "load error"
 	db 0x0a
 	db 0x00
 

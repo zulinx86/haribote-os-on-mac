@@ -1,5 +1,7 @@
 ; helloos
 
+	cyls equ 10
+
 	org 0x7c00
 
 ; Description for FAT12 floppy disk
@@ -41,7 +43,7 @@ entry:
 	mov ds,ax
 	mov es,ax
 
-	; Read sectors from #1 - #18
+	; Read unitl cylinder #10
 	mov ax,0x0820
 	mov es,ax		; segment for output buffer
 	mov ch,0		; cylinder (0 - 79)
@@ -67,12 +69,27 @@ retry:
 	jmp retry
 
 next:
+	; update segment for output buffer
 	mov ax,es
 	add ax,0x0020
-	mov es,ax		; update segment for output buffer
+	mov es,ax
+
+	; Go to the next sector and go back to readloop if cl <= 18
 	add cl,1
 	cmp cl,18
-	jbe readloop	; loop until #18
+	jbe readloop
+
+	; Go to the next head and go back to readloop if dh < 2
+	mov cl,1
+	add dh,1
+	cmp dh,2
+	jb readloop
+
+	; Go to the next cylinder and go back to readloop if ch < cyls
+	mov dh,0
+	add ch,1
+	cmp ch,cyls
+	jb readloop
 
 fin:
 	hlt

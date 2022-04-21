@@ -48,12 +48,23 @@ entry:
 	mov dh,0		; head (0 - 1)
 	mov cl,2		; sector (1 - 18)
 
+	mov si,0		; count failures
+retry:
 	mov ah,0x02		; function to read
 	mov al,1		; number of sectors
 	mov bx,0		; offset address for output buffer
 	mov dl,0x00		; drive number
 	int 0x13		; BIOS interruption for mass storage access
-	jc error
+	jnc fin
+
+	add si,1
+	cmp si,5
+	jae error		; jump to error if si >= 5
+
+	mov ah,0x00		; function to reset
+	mov dl,0x00		; driver number
+	int 0x13		; BIOS interruption for mass storage access
+	jmp retry
 
 fin:
 	hlt

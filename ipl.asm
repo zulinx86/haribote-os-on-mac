@@ -41,13 +41,13 @@ entry:
 	mov ds,ax
 	mov es,ax
 
-	; Read sectors after boot sector
+	; Read sectors from #1 - #18
 	mov ax,0x0820
 	mov es,ax		; segment for output buffer
 	mov ch,0		; cylinder (0 - 79)
 	mov dh,0		; head (0 - 1)
 	mov cl,2		; sector (1 - 18)
-
+readloop:
 	mov si,0		; count failures
 retry:
 	mov ah,0x02		; function to read
@@ -55,7 +55,7 @@ retry:
 	mov bx,0		; offset address for output buffer
 	mov dl,0x00		; drive number
 	int 0x13		; BIOS interruption for mass storage access
-	jnc fin
+	jnc next
 
 	add si,1
 	cmp si,5
@@ -65,6 +65,14 @@ retry:
 	mov dl,0x00		; driver number
 	int 0x13		; BIOS interruption for mass storage access
 	jmp retry
+
+next:
+	mov ax,es
+	add ax,0x0020
+	mov es,ax		; update segment for output buffer
+	add cl,1
+	cmp cl,18
+	jbe readloop	; loop until #18
 
 fin:
 	hlt

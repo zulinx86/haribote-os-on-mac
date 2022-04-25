@@ -92,6 +92,7 @@ next:
 	jb readloop
 
 	; Go to haribote.o
+	mov [0x0ff0],ch		; remember #cylinder loaded in IPL
 	jmp 0xc200
 
 fin:

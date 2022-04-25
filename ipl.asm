@@ -91,6 +91,9 @@ next:
 	cmp ch,cyls
 	jb readloop
 
+	; Go to haribote.o
+	jmp 0xc200
+
 fin:
 	hlt
 	jmp fin

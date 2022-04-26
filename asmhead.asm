@@ -8,6 +8,7 @@
 	scrnx equ 0x0ff4
 	scrny equ 0x0ff6
 	vram  equ 0x0ff8
+	fonts equ 0x0ffc
 
 ; I/O port
 
@@ -45,6 +46,20 @@
 	mov ah,0x02			; function to read keyboard flags
 	int 0x16			; BIOS interruption for keyboard
 	mov [leds],al
+
+	; Get bitmap fonts from BIOS
+	mov ah,0x11			; character generator routine
+	mov al,0x30			; get current character generator information
+	mov bh,0x06			; ROM 8x16 character table pointer
+	int 0x10			; BIOS interruption for video display
+						; es:bp = pointer to table
+	mov eax,0
+	mov ax,es
+	shl eax,4			; eax = (es << 4)
+	mov ebx,0
+	mov bx,bp			; ebx = bp
+	add eax,ebx			; eax += ebx
+	mov [fonts],eax
 
 	; Ingore interruptions
 	mov al,0xff

@@ -33,20 +33,21 @@ void putfont(char *vram, int xsize, int x, int y, char c, char *font);
 struct BOOTINFO {
 	char cyls, leds, vmode, reserve;
 	short scrnx, scrny;
-	char *vram;
+	char *vram, *fonts;
 };
 
 void HariMain(void)
 {
 	struct BOOTINFO *binfo = (struct BOOTINFO *)0x0ff0;
-	static char font_A[16] = {
-		0x00, 0x18, 0x18, 0x18, 0x18, 0x24, 0x24, 0x24,
-		0x24, 0x7e, 0x42, 0x42, 0x42, 0xe7, 0x00, 0x00
-	};
 
 	init_palette();
 	init_screen(binfo->vram, binfo->scrnx, binfo->scrny);
-	putfont(binfo->vram, binfo->scrnx, 10, 10, COL8_FFFFFF, font_A);
+	putfont(binfo->vram, binfo->scrnx,  8, 8, COL8_FFFFFF, binfo->fonts + 'A' * 16);
+	putfont(binfo->vram, binfo->scrnx, 16, 8, COL8_FFFFFF, binfo->fonts + 'B' * 16);
+	putfont(binfo->vram, binfo->scrnx, 24, 8, COL8_FFFFFF, binfo->fonts + 'C' * 16);
+	putfont(binfo->vram, binfo->scrnx, 40, 8, COL8_FFFFFF, binfo->fonts + '1' * 16);
+	putfont(binfo->vram, binfo->scrnx, 48, 8, COL8_FFFFFF, binfo->fonts + '2' * 16);
+	putfont(binfo->vram, binfo->scrnx, 56, 8, COL8_FFFFFF, binfo->fonts + '3' * 16);
 
 	for (;;)
 		io_hlt();
@@ -128,7 +129,7 @@ void putfont(char *vram, int xsize, int x, int y, char c, char *font)
 		p = vram + (y + i) * xsize + x;
 		d = font[i];
 		for (j = 0; j < 8; ++j)
-			if (d & (1 << j))
+			if (d & (1 << (7 - j)))
 				p[j] = c;
 	}
 }

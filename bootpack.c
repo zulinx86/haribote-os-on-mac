@@ -1,9 +1,21 @@
 void io_hlt(void);
+void io_cli(void);
+void io_out8(int port, int data);
+int io_load_eflags(void);
+void io_store_eflags(int eflags);
+
+#define PORT_VIDEO_WRITE 0x03c8
+#define PORT_VIDEO_DATA  0x03c9
+
+void init_palette(void);
+void set_palette(int start, int end, unsigned char *rgb);
 
 void HariMain(void)
 {
 	int i;
 	char *p;
+
+	init_palette();
 	
 	p = (char *)0x000a0000;
 	for (i = 0; i <= 0xffff; ++i)
@@ -11,4 +23,42 @@ void HariMain(void)
 
 	for (;;)
 		io_hlt();
+}
+
+void init_palette(void)
+{
+	static unsigned char table_rgb[16 * 3] = {
+		0x00, 0x00, 0x00,	/*  0: bloack */
+		0xff, 0x00, 0x00,	/*  1: bright red */
+		0x00, 0xff, 0x00,	/*  2: bright green */
+		0xff, 0xff, 0x00,	/*  3: bright yellow */
+		0x00, 0x00, 0xff,	/*  4: bright blue */
+		0xff, 0x00, 0xff,	/*  5: bright purple */
+		0x00, 0xff, 0xff,	/*  6: bright light blue */
+		0xff, 0xff, 0xff,	/*  7: white */
+		0xc6, 0xc6, 0xc6,	/*  8: bright gray */
+		0x84, 0x00, 0x00,	/*  9: dark red */
+		0x00, 0x84, 0x00,	/* 10: dark green */
+		0x84, 0x84, 0x00,	/* 11: dark yellow */
+		0x00, 0x00, 0x84,	/* 12: dark blue */
+		0x84, 0x00, 0x84,	/* 13: dark purple */
+		0x00, 0x84, 0x84,	/* 14: dark light blue */
+		0x84, 0x84, 0x84	/* 15: dark gray */
+	};
+
+	set_palette(0, 16, table_rgb);
+}
+
+void set_palette(int start, int end, unsigned char *rgb)
+{
+	int i, eflags;
+
+	eflags = io_load_eflags();
+	io_cli();
+
+	io_out8(PORT_VIDEO_WRITE, start);
+	for (i = start; i < end * 3; ++i)
+		io_out8(PORT_VIDEO_DATA, rgb[i] / 4);
+
+	io_store_eflags(eflags);
 }

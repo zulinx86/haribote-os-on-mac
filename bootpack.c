@@ -32,6 +32,8 @@ void boxfill(char *vram, int xsize, char c, int x0, int y0, int x1, int y1);
 void init_screen(char *vram, int xsize, int ysize);
 void putfont(char *vram, int xsize, int x, int y, char c, char *font);
 void putfonts(char *vram, int xsize, char *fonts, int x, int y, char c, const char *s);
+void init_mouse_cursor(char *mouse, char bc);
+void putblock(char *vram, int xsize, int pxsize, int pysize, int px0, int py0, char *buf);
 
 struct BOOTINFO {
 	char cyls, leds, vmode, reserve;
@@ -42,16 +44,18 @@ struct BOOTINFO {
 void HariMain(void)
 {
 	struct BOOTINFO *binfo = (struct BOOTINFO *)0x0ff0;
-	char s[40];
+	char s[40], mcursor[256];
+	int mx, my;
 
 	init_palette();
 	init_screen(binfo->vram, binfo->scrnx, binfo->scrny);
-	putfonts(binfo->vram, binfo->scrnx, binfo->fonts,  8,  8, COL8_FFFFFF, "ABC 123");
-	putfonts(binfo->vram, binfo->scrnx, binfo->fonts, 31, 31, COL8_000000, "Haribote OS.");
-	putfonts(binfo->vram, binfo->scrnx, binfo->fonts, 30, 30, COL8_FFFFFF, "Haribote OS.");
 
-	mysprintf(s, "scrnx = %d", binfo->scrnx);
-	putfonts(binfo->vram, binfo->scrnx, binfo->fonts, 16, 64, COL8_FFFFFF, s);
+	mx = (binfo->scrnx - 16) / 2;
+	my = (binfo->scrny - 28 - 16) / 2;
+	init_mouse_cursor(mcursor, COL8_008484);
+	putblock(binfo->vram, binfo->scrnx, 16, 16, mx, my, mcursor);
+	mysprintf(s, "(%d, %d)", mx, my);
+	putfonts(binfo->vram, binfo->scrnx, binfo->fonts, 0, 0, COL8_FFFFFF, s);
 
 	for (;;)
 		io_hlt();
@@ -143,5 +147,53 @@ void putfonts(char *vram, int xsize, char *fonts, int x, int y, char c, const ch
 	for (; *s != 0x00; ++s) {
 		putfont(vram, xsize, x, y, c, fonts + (*s) * 16);
 		x += 8;
+	}
+}
+
+void init_mouse_cursor(char *mouse, char bc)
+{
+	static char cursor[16][16] = {
+		"**************..",
+		"*OOOOOOOOOOO*...",
+		"*OOOOOOOOOO*....",
+		"*OOOOOOOOO*.....",
+		"*OOOOOOOO*......",
+		"*OOOOOOO*.......",
+		"*OOOOOOO*.......",
+		"*OOOOOOOO*......",
+		"*OOOO**OOO*.....",
+		"*OOO*..*OOO*....",
+		"*OO*....*OOO*...",
+		"*O*......*OOO*..",
+		"**........*OOO*.",
+		"*..........*OOO*",
+		"............*OO*",
+		".............***"
+	};
+	int x, y;
+
+	for (y = 0; y < 16; ++y) {
+		for (x = 0; x < 16; ++x) {
+			if (cursor[y][x] == '*') {
+				mouse[y * 16 + x] = COL8_000000;
+			}
+			if (cursor[y][x] == 'O') {
+				mouse[y * 16 + x] = COL8_FFFFFF;
+			}
+			if (cursor[y][x] == '.') {
+				mouse[y * 16 + x] = bc;
+			}
+		}
+	}
+}
+
+void putblock(char *vram, int xsize, int pxsize, int pysize, int px0, int py0, char *buf)
+{
+	int x, y;
+
+	for (y = 0; y < pysize; ++y) {
+		for (x = 0; x < pxsize; ++x) {
+			vram[(py0 + y) * xsize + (px0 + x)] = buf[y * pxsize + x];
+		}
 	}
 }

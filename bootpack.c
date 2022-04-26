@@ -8,7 +8,11 @@ void HariMain(void)
 	int mx, my;
 
 	init_gdtidt();
+
 	init_pic();
+	io_sti();
+	io_out8(PORT_PIC0_DATA, 0xf9);	/* enable PIC1 and PS/2 keyboard (0b11111001) */
+	io_out8(PORT_PIC1_DATA, 0xef);	/* enable PS/2 mouse (0b11101111) */
 
 	init_palette();
 	init_screen(binfo->vram, binfo->scrnx, binfo->scrny);

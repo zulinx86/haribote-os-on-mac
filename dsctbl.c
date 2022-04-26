@@ -17,6 +17,8 @@ void init_gdtidt(void)
 	for (i = 0; i < 256; ++i)
 		set_gatedesc(idt + i, 0, 0, 0);
 	load_idtr(LIMIT_IDT, ADDR_IDT);
+	set_gatedesc(idt + 0x21, (int)asm_inthandler21, 2 << 3, AR_INTGATE32);
+	set_gatedesc(idt + 0x2c, (int)asm_inthandler2c, 2 << 3, AR_INTGATE32);
 }
 
 void set_segmdesc(struct SEGMENT_DESCRIPTOR *sd, unsigned int limit, int base, int ar)

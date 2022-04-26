@@ -29,6 +29,7 @@ void set_palette(int start, int end, unsigned char *rgb);
 void boxfill(char *vram, int xsize, char c, int x0, int y0, int x1, int y1);
 void init_screen(char *vram, int xsize, int ysize);
 void putfont(char *vram, int xsize, int x, int y, char c, char *font);
+void putfonts(char *vram, int xsize, char *fonts, int x, int y, char c, const char *s);
 
 struct BOOTINFO {
 	char cyls, leds, vmode, reserve;
@@ -42,12 +43,9 @@ void HariMain(void)
 
 	init_palette();
 	init_screen(binfo->vram, binfo->scrnx, binfo->scrny);
-	putfont(binfo->vram, binfo->scrnx,  8, 8, COL8_FFFFFF, binfo->fonts + 'A' * 16);
-	putfont(binfo->vram, binfo->scrnx, 16, 8, COL8_FFFFFF, binfo->fonts + 'B' * 16);
-	putfont(binfo->vram, binfo->scrnx, 24, 8, COL8_FFFFFF, binfo->fonts + 'C' * 16);
-	putfont(binfo->vram, binfo->scrnx, 40, 8, COL8_FFFFFF, binfo->fonts + '1' * 16);
-	putfont(binfo->vram, binfo->scrnx, 48, 8, COL8_FFFFFF, binfo->fonts + '2' * 16);
-	putfont(binfo->vram, binfo->scrnx, 56, 8, COL8_FFFFFF, binfo->fonts + '3' * 16);
+	putfonts(binfo->vram, binfo->scrnx, binfo->fonts,  8,  8, COL8_FFFFFF, "ABC 123");
+	putfonts(binfo->vram, binfo->scrnx, binfo->fonts, 31, 31, COL8_000000, "Haribote OS.");
+	putfonts(binfo->vram, binfo->scrnx, binfo->fonts, 30, 30, COL8_FFFFFF, "Haribote OS.");
 
 	for (;;)
 		io_hlt();
@@ -131,5 +129,13 @@ void putfont(char *vram, int xsize, int x, int y, char c, char *font)
 		for (j = 0; j < 8; ++j)
 			if (d & (1 << (7 - j)))
 				p[j] = c;
+	}
+}
+
+void putfonts(char *vram, int xsize, char *fonts, int x, int y, char c, const char *s)
+{
+	for (; *s != 0x00; ++s) {
+		putfont(vram, xsize, x, y, c, fonts + (*s) * 16);
+		x += 8;
 	}
 }

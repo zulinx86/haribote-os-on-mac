@@ -5,8 +5,11 @@ img:
 %.o: %.asm
 	nasm -o $@ -l $(<:.asm=.lst) $<
 
-bootpack.o: bootpack.c haribote.ld
-	i386-elf-gcc -march=i486 -m32 -nostdlib -Wall -T haribote.ld -o bootpack.o bootpack.c
+nasmfunc.o: nasmfunc.asm
+	nasm -f elf32 -o nasmfunc.o -l nasmfunc.lst nasmfunc.asm
+
+bootpack.o: haribote.ld bootpack.c nasmfunc.o
+	i386-elf-gcc -march=i486 -m32 -nostdlib -Wall -T haribote.ld -o bootpack.o bootpack.c nasmfunc.o
 
 haribote.sys: asmhead.o bootpack.o
 	cat asmhead.o bootpack.o > haribote.sys

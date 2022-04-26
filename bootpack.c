@@ -7,7 +7,7 @@ void HariMain(void)
 	
 	p = (char *)0x000a0000;
 	for (i = 0; i <= 0xffff; ++i)
-		*(p + i) = i & 0x0f;
+		p[i] = i & 0x0f;
 
 	for (;;)
 		io_hlt();

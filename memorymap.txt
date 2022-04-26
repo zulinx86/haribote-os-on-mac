@@ -9,5 +9,7 @@
 | 0x000C_8000 | 0x000E_FFFF | 160 KiB     | BIOS Expansions
 | 0x000F_0000 | 0x000F_FFFF | 64 KiB      | BIOS
 | 0x0010_0000 | 0x0012_CFFF | 180 KiB     | Disk cache for protected mode
+| 0x0026_F800 | 0x0026_FFFF | 2 KiB       | IDT
+| 0x0027_0000 | 0x0027_FFFF | 64 KiB      | GDT
 | 0x0028_0000 | 0x0030_0000 | 512 KiB     | .text section of bootpack
 | 0x0031_0000 |             |             | .data section of bootpack

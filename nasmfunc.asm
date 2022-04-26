@@ -6,6 +6,7 @@ bits 32
 	global io_in8, io_in16, io_in32
 	global io_out8, io_out16, io_out32
 	global io_load_eflags, io_store_eflags
+	global load_gdtr, load_idtr
 
 section .text
 
@@ -70,4 +71,16 @@ io_store_eflags:	; void io_store_eflags(int eflags);
 	mov eax,[esp+4]
 	push eax
 	popfd
+	ret
+
+load_gdtr:			; void load_gdtr(int limit, int addr);
+	mov ax,[esp+4]
+	mov [esp+6],ax
+	lgdt [esp+6]
+	ret
+
+load_idtr:			; void load_idtr(int limit, int addr);
+	mov ax,[esp+4]
+	mov [esp+6],ax
+	lidt [esp+6]
 	ret

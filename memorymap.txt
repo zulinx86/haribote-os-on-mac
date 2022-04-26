@@ -1,0 +1,13 @@
+| Start       | End         | Size        | Description
+|-------------|-------------|-------------|----------------------------------------------------
+| 0x0000_0000 | 0x0000_03FF | 1 KiB       | Interrupt vector table (IVT) for real mode
+| 0x0000_0400 | 0x0000_04FF | 256 B       | BIOS data area (BDA)
+| 0x0000_7C00 | 0x0000_7DFF | 512 B       | Initial program loader (IPL)
+| 0x0000_8000 | 0x0003_4FFF | 180 KiB     | Disk cache for real mode
+| 0x000A_0000 | 0x000B_FFFF | 128 KiB     | Video RAM
+| 0x000C_0000 | 0x000C_7FFF | 32 KiB      | Video BIOS
+| 0x000C_8000 | 0x000E_FFFF | 160 KiB     | BIOS Expansions
+| 0x000F_0000 | 0x000F_FFFF | 64 KiB      | BIOS
+| 0x0010_0000 | 0x0012_CFFF | 180 KiB     | Disk cache for protected mode
+| 0x0028_0000 | 0x0030_0000 | 512 KiB     | .text section of bootpack
+| 0x0031_0000 |             |             | .data section of bootpack

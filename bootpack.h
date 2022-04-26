@@ -71,3 +71,25 @@ void set_gatedesc(struct GATE_DESCRIPTOR *gd, int offset, int selector, int ar);
 #define LIMIT_BOOTPACK	0x0007ffff
 #define AR_DATA32_RW	0x4092
 #define AR_CODE32_ER	0x409a
+
+/* int.h */
+void init_pic(void);
+
+#define PORT_PIC0	0x20
+#define PORT_PIC0_COMM	(PORT_PIC0)
+#define PORT_PIC0_DATA	(PORT_PIC0 + 1)
+#define PORT_PIC1	0xa0
+#define PORT_PIC1_COMM	(PORT_PIC1)
+#define PORT_PIC1_DATA	(PORT_PIC1 + 1)
+
+#define ICW1_ICW4	0x01		/* ICW4 (not) needed */
+#define ICW1_SINGLE	0x02		/* Single (cascade) mode */
+#define ICW1_INTERVAL	0x04		/* Call address interval 4 (8) */
+#define ICW1_LEVEL	0x08		/* Level trigggered (edge) mode */
+#define ICW1_INIT	0x10		/* Initialization - required! */
+
+#define ICW4_8086	0x01		/* 8086/88 mode */
+#define ICW4_AUTO	0x02		/* Auto (normal) EOI */
+#define ICW4_BUF_SLAVE	0x08		/* Buffered mode/slave */
+#define ICW4_BUF_MASTER	0x0c		/* Buffered mode/master */
+#define ICW4_SFNM	0x10		/* Special fully nested (not) */

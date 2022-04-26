@@ -1,4 +1,4 @@
-OBJS_BOOTPACK = bootpack.o nasmfunc.o mystdio.o graphic.o dsctbl.o
+OBJS_BOOTPACK = bootpack.o nasmfunc.o mystdio.o graphic.o dsctbl.o int.o
 HDRS_BOOTPACK = mystdio.h bootpack.h
 
 .PHONY: img

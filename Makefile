@@ -1,22 +1,28 @@
+OBJS_BOOTPACK = bootpack.o nasmfunc.o mystdio.o graphic.o dsctbl.o
+HDRS_BOOTPACK = mystdio.h
+
 .PHONY: img
 img:
 	make -r haribote.img
 
-%.o: %.asm
+%.bin: %.asm
 	nasm -o $@ -l $(<:.asm=.lst) $<
 
 nasmfunc.o: nasmfunc.asm
 	nasm -f elf32 -o nasmfunc.o -l nasmfunc.lst nasmfunc.asm
 
-bootpack.o: haribote.ld bootpack.c nasmfunc.o mystdio.c graphic.c
-	i386-elf-gcc -march=i486 -m32 -nostdlib -Wall -T haribote.ld -o bootpack.o bootpack.c nasmfunc.o mystdio.c graphic.c dsctbl.c
+%.o: %.c
+	i386-elf-gcc -c -march=i486 -m32 -nostdlib -Wall -o $@ $<
 
-haribote.sys: asmhead.o bootpack.o
-	cat asmhead.o bootpack.o > haribote.sys
+bootpack.hrb: haribote.ld $(OBJS_BOOTPACK) $(HDRS_BOOTPACK)
+	i386-elf-gcc -march=i486 -m32 -nostdlib -Wall -T haribote.ld -o $@ $(OBJS_BOOTPACK) 
 
-haribote.img: ipl.o haribote.sys
-	mformat -f 1440 -C -B ipl.o -i haribote.img
-	mcopy -i haribote.img haribote.sys ::haribote.sys
+haribote.sys: asmhead.bin bootpack.hrb
+	cat $^ > $@
+
+haribote.img: ipl.bin haribote.sys
+	mformat -f 1440 -C -B ipl.bin -i $@
+	mcopy -i $@ haribote.sys ::haribote.sys
 
 .PHONY: run
 run:
@@ -25,4 +31,4 @@ run:
 
 .PHONY: clean
 clean:
-	rm -f *.o *.lst *.img *.sys
+	rm -f *.bin *.lst *.o *.hrb *.sys *.img

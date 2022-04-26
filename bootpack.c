@@ -30,13 +30,30 @@ void boxfill(char *vram, int xsize, char c, int x0, int y0, int x1, int y1);
 
 void HariMain(void)
 {
-	char *p;
+	char *vram;
+	int xsize, ysize;
 
 	init_palette();
-	p = (char *)0x000a0000;
-	boxfill(p, 320, COL8_FF0000,  20,  20, 120, 120);
-	boxfill(p, 320, COL8_00FF00,  70,  50, 170, 150);
-	boxfill(p, 320, COL8_0000FF, 120,  80, 220, 180);
+	vram = (char *)0x000a0000;
+	xsize = 320;
+	ysize = 200;
+
+	boxfill(vram, xsize, COL8_008484,          0,          0,      xsize, ysize - 28);
+	boxfill(vram, xsize, COL8_C6C6C6,          0, ysize - 28,      xsize, ysize - 27);
+	boxfill(vram, xsize, COL8_FFFFFF,          0, ysize - 27,      xsize, ysize - 26);
+	boxfill(vram, xsize, COL8_C6C6C6,          0, ysize - 26,      xsize,      ysize);
+
+	boxfill(vram, xsize, COL8_FFFFFF,          2, ysize - 24,         60, ysize - 23);
+	boxfill(vram, xsize, COL8_FFFFFF,          2, ysize - 24,          3, ysize -  3);
+	boxfill(vram, xsize, COL8_000000,          2, ysize -  3,         61, ysize -  2);
+	boxfill(vram, xsize, COL8_000000,         60, ysize - 24,         61, ysize -  2);
+	boxfill(vram, xsize, COL8_848484,          3, ysize -  4,         60, ysize -  3);
+	boxfill(vram, xsize, COL8_848484,         59, ysize - 23,         60, ysize -  3);
+
+	boxfill(vram, xsize, COL8_848484, xsize - 47, ysize - 24, xsize -  3, ysize - 23);
+	boxfill(vram, xsize, COL8_848484, xsize - 47, ysize - 23, xsize - 46, ysize -  4);
+	boxfill(vram, xsize, COL8_FFFFFF, xsize - 47, ysize -  4, xsize -  3, ysize -  3);
+	boxfill(vram, xsize, COL8_FFFFFF, xsize -  3, ysize - 24, xsize -  2, ysize -  3);
 
 	for (;;)
 		io_hlt();

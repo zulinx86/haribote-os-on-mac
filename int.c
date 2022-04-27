@@ -1,7 +1,7 @@
 #include "mystdio.h"
 #include "bootpack.h"
 
-struct KEYBUF keybuf;
+struct FIFO8 keyfifo;
 
 void init_pic(void)
 {
@@ -28,14 +28,7 @@ void inthandler21(int *esp)
 
 	data = io_in8(PORT_KEY_DATA);
 	io_out8(PORT_PIC0_COMM, PIC0_EOI_KEY);
-
-	if (keybuf.len < 32) {
-		keybuf.data[keybuf.next_w] = data;
-		keybuf.len++;
-		keybuf.next_w++;
-		if (keybuf.next_w == 32)
-			keybuf.next_w = 0;
-	}
+	fifo8_put(&keyfifo, data);
 }
 
 void inthandler2c(int *esp)

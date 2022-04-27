@@ -10,6 +10,8 @@ struct BOOTINFO {
 /* nasmfunc.asm */
 void io_hlt(void);
 void io_cli(void);
+void io_sti(void);
+int io_in8(int port);
 void io_out8(int port, int data);
 int io_load_eflags(void);
 void io_store_eflags(int eflags);
@@ -96,3 +98,8 @@ void init_pic(void);
 #define ICW4_BUF_SLAVE	0x08		/* Buffered mode/slave */
 #define ICW4_BUF_MASTER	0x0c		/* Buffered mode/master */
 #define ICW4_SFNM	0x10		/* Special fully nested (not) */
+
+#define PIC_EOI		0x60		/* Specific End Of Interrupt (EOI) */
+#define PIC0_EOI_KEY	(PIC_EOI + 1)
+
+#define PORT_KEY_DATA	0x60

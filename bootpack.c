@@ -7,7 +7,7 @@ void HariMain(void)
 {
 	struct BOOTINFO *binfo = (struct BOOTINFO *)ADDR_BOOTINFO;
 	char s[40], mcursor[256];
-	int mx, my, i;
+	int mx, my, i, j;
 
 	init_gdtidt();
 
@@ -28,11 +28,13 @@ void HariMain(void)
 
 	for (;;) {
 		io_cli();
-		if (keybuf.flag == 0) {
+		if (keybuf.next == 0) {
 			io_stihlt();
 		} else {
-			i = keybuf.data;
-			keybuf.flag = 0;
+			i = keybuf.data[0];
+			keybuf.next--;
+			for (j = 0; j < keybuf.next; ++j)
+				keybuf.data[j] = keybuf.data[j + 1];
 			io_sti();
 			mysprintf(s, "%02X", i);
 			boxfill(binfo->vram, binfo->scrnx, COL8_008484, 0, 16, 16, 32);

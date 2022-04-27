@@ -1,7 +1,7 @@
 #include "mystdio.h"
 #include "bootpack.h"
 
-struct FIFO8 keyfifo;
+struct FIFO8 keyfifo, mousefifo;
 
 void init_pic(void)
 {
@@ -26,16 +26,17 @@ void inthandler21(int *esp)
 {
 	unsigned char data;
 
-	data = io_in8(PORT_KEY_DATA);
+	data = io_in8(PORT_KBC_DATA);
 	io_out8(PORT_PIC0_COMM, PIC0_EOI_KEY);
 	fifo8_put(&keyfifo, data);
 }
 
 void inthandler2c(int *esp)
 {
-	struct BOOTINFO *binfo = (struct BOOTINFO *)ADDR_BOOTINFO;
-	boxfill(binfo->vram, binfo->scrnx, COL8_000000, 0, 0, 32 * 8, 16);
-	putfonts(binfo->vram, binfo->scrnx, binfo->fonts, 0, 0, COL8_FFFFFF, "INT 2C (IRQ-12) : PS/2 mouse");
-	for (;;)
-		io_hlt();
+	unsigned char data;
+
+	data = io_in8(PORT_KBC_DATA);
+	io_out8(PORT_PIC1_COMM, PIC1_EOI_MOUSE);
+	io_out8(PORT_PIC0_COMM, PIC0_EOI_PIC1);
+	fifo8_put(&mousefifo, data);
 }

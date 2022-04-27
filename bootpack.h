@@ -113,5 +113,7 @@ void init_pic(void);
 
 #define PIC_EOI		0x60		/* Specific End Of Interrupt (EOI) */
 #define PIC0_EOI_KEY	(PIC_EOI + 1)
+#define PIC0_EOI_PIC1	(PIC_EOI + 2)
+#define PIC1_EOI_MOUSE	(PIC_EOI + 4)
 
-#define PORT_KEY_DATA	0x60
+#define PORT_KBC_DATA	0x60

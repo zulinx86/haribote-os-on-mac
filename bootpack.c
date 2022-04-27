@@ -1,7 +1,7 @@
 #include "mystdio.h"
 #include "bootpack.h"
 
-extern struct FIFO8 keyfifo;
+extern struct FIFO8 keyfifo, mousefifo;
 void enable_mouse(void);
 void init_keyboard(void);
 
@@ -9,18 +9,19 @@ void HariMain(void)
 {
 	struct BOOTINFO *binfo = (struct BOOTINFO *)ADDR_BOOTINFO;
 	char s[40], mcursor[256];
-	unsigned char keybuf[32];
+	unsigned char keybuf[32], mousebuf[128];
 	int mx, my, i;
 
 	init_gdtidt();
 
 	init_pic();
-	fifo8_init(&keyfifo, 32, keybuf);
 
 	io_sti();
 	io_out8(PORT_PIC0_DATA, 0xf9);	/* enable PIC1 and PS/2 keyboard (0b11111001) */
 	io_out8(PORT_PIC1_DATA, 0xef);	/* enable PS/2 mouse (0b11101111) */
 
+	fifo8_init(&keyfifo, 32, keybuf);
+	fifo8_init(&mousefifo, 128, mousebuf);
 	init_keyboard();
 	enable_mouse();
 
@@ -36,14 +37,22 @@ void HariMain(void)
 
 	for (;;) {
 		io_cli();
-		if (fifo8_status(&keyfifo) == 0) {
+		if (fifo8_status(&keyfifo) + fifo8_status(&mousefifo) == 0) {
 			io_stihlt();
 		} else {
-			i = fifo8_get(&keyfifo);
-			io_sti();
-			mysprintf(s, "%02X", i);
-			boxfill(binfo->vram, binfo->scrnx, COL8_008484, 0, 16, 16, 32);
-			putfonts(binfo->vram, binfo->scrnx, binfo->fonts, 0, 16, COL8_FFFFFF, s);
+			if (fifo8_status(&keyfifo)) {
+				i = fifo8_get(&keyfifo);
+				io_sti();
+				mysprintf(s, "%02X", i);
+				boxfill(binfo->vram, binfo->scrnx, COL8_008484, 0, 16, 16, 32);
+				putfonts(binfo->vram, binfo->scrnx, binfo->fonts, 0, 16, COL8_FFFFFF, s);
+			} else if (fifo8_status(&mousefifo)) {
+				i = fifo8_get(&mousefifo);
+				io_sti();
+				mysprintf(s, "%02X", i);
+				boxfill(binfo->vram, binfo->scrnx, COL8_008484, 32, 16, 48, 32);
+				putfonts(binfo->vram, binfo->scrnx, binfo->fonts, 32, 16, COL8_FFFFFF, s);
+			}
 		}
 	}
 }

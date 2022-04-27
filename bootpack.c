@@ -1,11 +1,13 @@
 #include "mystdio.h"
 #include "bootpack.h"
 
+extern struct KEYBUF keybuf;
+
 void HariMain(void)
 {
 	struct BOOTINFO *binfo = (struct BOOTINFO *)ADDR_BOOTINFO;
 	char s[40], mcursor[256];
-	int mx, my;
+	int mx, my, i;
 
 	init_gdtidt();
 
@@ -24,6 +26,17 @@ void HariMain(void)
 	mysprintf(s, "(%d, %d)", mx, my);
 	putfonts(binfo->vram, binfo->scrnx, binfo->fonts, 0, 0, COL8_FFFFFF, s);
 
-	for (;;)
-		io_hlt();
+	for (;;) {
+		io_cli();
+		if (keybuf.flag == 0) {
+			io_stihlt();
+		} else {
+			i = keybuf.data;
+			keybuf.flag = 0;
+			io_sti();
+			mysprintf(s, "%02X", i);
+			boxfill(binfo->vram, binfo->scrnx, COL8_008484, 0, 16, 16, 32);
+			putfonts(binfo->vram, binfo->scrnx, binfo->fonts, 0, 16, COL8_FFFFFF, s);
+		}
+	}
 }

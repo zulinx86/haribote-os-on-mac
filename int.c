@@ -1,6 +1,8 @@
 #include "mystdio.h"
 #include "bootpack.h"
 
+struct KEYBUF keybuf;
+
 void init_pic(void)
 {
 	io_out8(PORT_PIC0_DATA, 0xff);			/* ignore all interrupts */
@@ -22,16 +24,15 @@ void init_pic(void)
 
 void inthandler21(int *esp)
 {
-	struct BOOTINFO *binfo = (struct BOOTINFO *)ADDR_BOOTINFO;
 	unsigned char data;
-	char s[4];
 
 	data = io_in8(PORT_KEY_DATA);
 	io_out8(PORT_PIC0_COMM, PIC0_EOI_KEY);
 
-	mysprintf(s, "%02X", data);
-	boxfill(binfo->vram, binfo->scrnx, COL8_008484, 0, 16, 16, 32);
-	putfonts(binfo->vram, binfo->scrnx, binfo->fonts, 0, 16, COL8_FFFFFF, s);
+	if (keybuf.flag == 0) {
+		keybuf.data = data;
+		keybuf.flag = 1;
+	}
 }
 
 void inthandler2c(int *esp)

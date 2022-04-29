@@ -38,7 +38,7 @@ void HariMain(void)
 	my = (binfo->scrny - 28 - 16) / 2;
 	init_mouse_cursor(mcursor, COL8_008484);
 	putblock(binfo->vram, binfo->scrnx, 16, 16, mx, my, mcursor);
-	mysprintf(s, "(%d, %d)", mx, my);
+	mysprintf(s, "(%3d, %3d)", mx, my);
 	putfonts(binfo->vram, binfo->scrnx, binfo->fonts, 0, 0, COL8_FFFFFF, s);
 
 	for (;;) {
@@ -65,6 +65,22 @@ void HariMain(void)
 						s[2] = 'C';
 					boxfill(binfo->vram, binfo->scrnx, COL8_008484, 32, 16, 32 + 15 * 8, 32);
 					putfonts(binfo->vram, binfo->scrnx, binfo->fonts, 32, 16, COL8_FFFFFF, s);
+
+					boxfill(binfo->vram, binfo->scrnx, COL8_008484, 0, 0, 80, 16);
+					boxfill(binfo->vram, binfo->scrnx, COL8_008484, mx, my, mx + 16, my + 16);
+					mx += mdec.x;
+					my += mdec.y;
+					if (mx < 0)
+						mx = 0;
+					if (my < 0)
+						my = 0;
+					if (mx > binfo->scrnx - 16)
+						mx = binfo->scrnx - 16;
+					if (my > binfo->scrny - 16)
+						my = binfo->scrny - 16;
+					mysprintf(s, "(%3d, %3d)", mx, my);
+					putfonts(binfo->vram, binfo->scrnx, binfo->fonts, 0, 0, COL8_FFFFFF, s);
+					putblock(binfo->vram, binfo->scrnx, 16, 16, mx, my, mcursor);
 				}
 			}
 		}

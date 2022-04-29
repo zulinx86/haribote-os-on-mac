@@ -1,15 +1,6 @@
 #include "mystdio.h"
 #include "bootpack.h"
 
-extern struct FIFO8 keyfifo, mousefifo;
-struct MOUSE_DEC {
-	unsigned char buf[3], phase;
-	int x, y, btn;
-};
-void enable_mouse(struct MOUSE_DEC *mdec);
-void init_keyboard(void);
-int mouse_decode(struct MOUSE_DEC *mdec, unsigned char data);
-
 void HariMain(void)
 {
 	struct BOOTINFO *binfo = (struct BOOTINFO *)ADDR_BOOTINFO;
@@ -85,73 +76,4 @@ void HariMain(void)
 			}
 		}
 	}
-}
-
-
-#define PORT_KBC_DATA		0x60
-#define PORT_KBC_STAT		0x64
-#define PORT_KBC_COMM		0x64
-#define KBC_COMM_WRITE_CONFIG	0x60
-#define KBC_COMM_TO_MOUSE	0xd4
-#define KBC_CONFIG_BYTE		0x47
-#define KBC_STAT_SEND_NOTREADY	0x02
-#define MOUSE_COMM_ENABLE	0xf4
-
-void wait_kbc_sendready(void)
-{
-	for (;;)
-		if ((io_in8(PORT_KBC_STAT) & KBC_STAT_SEND_NOTREADY) == 0)
-			break;
-}
-
-void init_keyboard(void)
-{
-	wait_kbc_sendready();
-	io_out8(PORT_KBC_COMM, KBC_COMM_WRITE_CONFIG);
-	wait_kbc_sendready();
-	io_out8(PORT_KBC_DATA, KBC_CONFIG_BYTE);
-}
-
-void enable_mouse(struct MOUSE_DEC *mdec)
-{
-	mdec->phase = 0;
-
-	wait_kbc_sendready();
-	io_out8(PORT_KBC_COMM, KBC_COMM_TO_MOUSE);
-	wait_kbc_sendready();
-	io_out8(PORT_KBC_DATA, MOUSE_COMM_ENABLE);
-}
-
-int mouse_decode(struct MOUSE_DEC *mdec, unsigned char data)
-{
-	if (mdec->phase == 0) {
-		if (data == 0xfa) /* ACK */
-			mdec->phase = 1;
-		return 0;
-	} else if (mdec->phase == 1) {
-		if ((data & 0xc8) == 0x08) { /* check if it is valid */
-			mdec->buf[0] = data;
-			mdec->phase = 2;
-		}
-		return 0;
-	} else if (mdec->phase == 2) {
-		mdec->buf[1] = data;
-		mdec->phase = 3;
-		return 0;
-	} else if (mdec->phase == 3) {
-		mdec->buf[2] = data;
-		mdec->phase = 1;
-
-		mdec->btn = mdec->buf[0] & 0x07;
-		mdec->x = mdec->buf[1];
-		mdec->y = mdec->buf[2];
-		if ((mdec->buf[0] & 0x10))
-			mdec->x |= 0xffffff00;
-		if ((mdec->buf[0] & 0x20))
-			mdec->y |= 0xffffff00;
-		mdec->y *= -1;
-		return 1;
-	}
-
-	return -1;
 }

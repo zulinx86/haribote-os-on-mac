@@ -116,4 +116,32 @@ void init_pic(void);
 #define PIC0_EOI_PIC1	(PIC_EOI + 2)
 #define PIC1_EOI_MOUSE	(PIC_EOI + 4)
 
-#define PORT_KBC_DATA	0x60
+/* keyboard.c */
+extern struct FIFO8 keyfifo;
+
+void inthandler21(int *esp);
+void wait_kbc_sendready(void);
+void init_keyboard(void);
+
+#define PORT_KBC_DATA		0x60
+#define PORT_KBC_STAT		0x64
+#define PORT_KBC_COMM		0x64
+
+#define KBC_COMM_WRITE_CONFIG	0x60
+#define KBC_COMM_TO_MOUSE	0xd4
+#define KBC_CONFIG_BYTE		0x47
+#define KBC_STAT_SEND_NOTREADY	0x02
+
+/* mouse.c */
+extern struct FIFO8 mousefifo;
+
+struct MOUSE_DEC {
+	unsigned char buf[3], phase;
+	int x, y, btn;
+};
+
+void inthandler2c(int *esp);
+void enable_mouse(struct MOUSE_DEC *mdec);
+int mouse_decode(struct MOUSE_DEC *mdec, unsigned char data);
+
+#define MOUSE_COMM_ENABLE	0xf4

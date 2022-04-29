@@ -1,8 +1,6 @@
 #include "mystdio.h"
 #include "bootpack.h"
 
-struct FIFO8 keyfifo, mousefifo;
-
 void init_pic(void)
 {
 	io_out8(PORT_PIC0_DATA, 0xff);			/* ignore all interrupts */
@@ -20,23 +18,4 @@ void init_pic(void)
 
 	io_out8(PORT_PIC0_DATA, 0xfb);			/* ignore interrupts except for PIC1 */
 	io_out8(PORT_PIC1_DATA, 0xff);			/* ignore all interrupts */
-}
-
-void inthandler21(int *esp)
-{
-	unsigned char data;
-
-	data = io_in8(PORT_KBC_DATA);
-	io_out8(PORT_PIC0_COMM, PIC0_EOI_KEY);
-	fifo8_put(&keyfifo, data);
-}
-
-void inthandler2c(int *esp)
-{
-	unsigned char data;
-
-	data = io_in8(PORT_KBC_DATA);
-	io_out8(PORT_PIC1_COMM, PIC1_EOI_MOUSE);
-	io_out8(PORT_PIC0_COMM, PIC0_EOI_PIC1);
-	fifo8_put(&mousefifo, data);
 }

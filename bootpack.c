@@ -1,6 +1,9 @@
 #include "mystdio.h"
 #include "bootpack.h"
 
+unsigned int memtest(unsigned int start, unsigned int end);
+unsigned int memtest_sub(unsigned int start, unsigned int end);
+
 void HariMain(void)
 {
 	struct BOOTINFO *binfo = (struct BOOTINFO *)ADDR_BOOTINFO;
@@ -31,6 +34,10 @@ void HariMain(void)
 	putblock(binfo->vram, binfo->scrnx, 16, 16, mx, my, mcursor);
 	mysprintf(s, "(%3d, %3d)", mx, my);
 	putfonts(binfo->vram, binfo->scrnx, binfo->fonts, 0, 0, COL8_FFFFFF, s);
+
+	i = memtest(0x00400000, 0xc0000000) / (1024 * 1024);
+	mysprintf(s, "Memory: %d MB", i);
+	putfonts(binfo->vram, binfo->scrnx, binfo->fonts, 0, 32, COL8_FFFFFF, s);
 
 	for (;;) {
 		io_cli();
@@ -76,4 +83,63 @@ void HariMain(void)
 			}
 		}
 	}
+}
+
+#define EFLAGS_AC_BIT		0x00040000
+#define CR0_CACHE_DISABLE	0x60000000
+
+unsigned int memtest(unsigned int start, unsigned int end)
+{
+	char flag486 = 0;
+	unsigned int eflags, cr0, i;
+
+	/* check whether the CPU is 386, or 486 and later. */
+	eflags = io_load_eflags();
+	eflags |= EFLAGS_AC_BIT; /* AC-bit = 1 */
+	io_store_eflags(eflags);
+	eflags = io_load_eflags();
+	if ((eflags & EFLAGS_AC_BIT) != 0) /* if the CPU is 386, AC is back to 0 automatically */
+		flag486 = 1;
+	eflags &= ~EFLAGS_AC_BIT; /* AC-bit = 0 */
+	io_store_eflags(eflags);
+
+	if (flag486) {
+		cr0 = load_cr0();
+		cr0 |= CR0_CACHE_DISABLE; /* disable CPU cache */
+		store_cr0(cr0);
+	}
+
+	i = memtest_sub(start, end);
+
+	if (flag486) {
+		cr0 = load_cr0();
+		cr0 &= ~CR0_CACHE_DISABLE;
+		store_cr0(cr0);
+	}
+
+	return i;
+}
+
+unsigned int memtest_sub(unsigned int start, unsigned int end)
+{
+	unsigned int i, *p, old, pat0 = 0xaa55aa55, pat1 = 0x55aa55aa;
+
+	for (i = start; i < end; i += 0x1000) {
+		p = (unsigned int *)(i + 0xffc);
+		old = *p;
+		*p = pat0;
+		*p ^= 0xffffffff;
+		if (*p != pat1) {
+			*p = old;
+			break;
+		}
+		*p ^= 0xffffffff;
+		if (*p != pat0) {
+			*p = old;
+			break;
+		}
+		*p = old;
+	}
+
+	return i;
 }

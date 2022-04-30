@@ -6,6 +6,7 @@ bits 32
 	global io_in8, io_in16, io_in32
 	global io_out8, io_out16, io_out32
 	global io_load_eflags, io_store_eflags
+	global load_cr0, store_cr0
 	global load_gdtr, load_idtr
 	global asm_inthandler21, asm_inthandler2c
 	extern inthandler21, inthandler2c
@@ -73,6 +74,15 @@ io_store_eflags:	; void io_store_eflags(int eflags);
 	mov eax,[esp+4]
 	push eax
 	popfd
+	ret
+
+load_cr0:			; int load_cr0(void);
+	mov eax,cr0
+	ret
+
+store_cr0:			; void store_cr0(int cr0);
+	mov eax,[esp+4]
+	mov cr0,eax
 	ret
 
 load_gdtr:			; void load_gdtr(int limit, int addr);

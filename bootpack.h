@@ -1,11 +1,11 @@
 /* asmhead.asm */
+#define ADDR_BOOTINFO	0x0ff0
+
 struct BOOTINFO {
 	char cyls, leds, vmode, reserve;
 	short scrnx, scrny;
 	char *vram, *fonts;
 };
-
-#define ADDR_BOOTINFO	0x0ff0
 
 /* nasmfunc.asm */
 void io_hlt(void);
@@ -36,15 +36,6 @@ int fifo8_get(struct FIFO8 *fifo);
 int fifo8_status(struct FIFO8 *fifo);
 
 /* graphic.c */
-void init_palette(void);
-void set_palette(int start, int end, unsigned char *rgb);
-void boxfill(char *vram, int xsize, char c, int x0, int y0, int x1, int y1);
-void init_screen(char *vram, int xsize, int ysize);
-void putfont(char *vram, int xsize, int x, int y, char c, char *font);
-void putfonts(char *vram, int xsize, char *fonts, int x, int y, char c, const char *s);
-void init_mouse_cursor(char *mouse, char bc);
-void putblock(char *vram, int xsize, int pxsize, int pysize, int px0, int py0, char *buf);
-
 #define PORT_VIDEO_WRITE 0x03c8
 #define PORT_VIDEO_DATA  0x03c9
 
@@ -65,7 +56,26 @@ void putblock(char *vram, int xsize, int pxsize, int pysize, int px0, int py0, c
 #define COL8_008484	14
 #define COL8_848484	15
 
+void init_palette(void);
+void set_palette(int start, int end, unsigned char *rgb);
+void boxfill(char *vram, int xsize, char c, int x0, int y0, int x1, int y1);
+void init_screen(char *vram, int xsize, int ysize);
+void putfont(char *vram, int xsize, int x, int y, char c, char *font);
+void putfonts(char *vram, int xsize, char *fonts, int x, int y, char c, const char *s);
+void init_mouse_cursor(char *mouse, char bc);
+void putblock(char *vram, int xsize, int pxsize, int pysize, int px0, int py0, char *buf);
+
 /* dsctbl.c */
+#define ADDR_IDT	0x0026f800
+#define LIMIT_IDT	0x000007ff
+#define ADDR_GDT	0x00270000
+#define LIMIT_GDT	0x0000ffff
+#define ADDR_BOOTPACK	0x00280000
+#define LIMIT_BOOTPACK	0x0007ffff
+#define AR_DATA32_RW	0x4092
+#define AR_CODE32_ER	0x409a
+#define AR_INTGATE32	0x008e
+
 struct SEGMENT_DESCRIPTOR {
 	short limit_low, base_low;
 	char base_mid, access_right;
@@ -82,19 +92,7 @@ void init_gdtidt(void);
 void set_segmdesc(struct SEGMENT_DESCRIPTOR *sd, unsigned int limit, int base, int ar);
 void set_gatedesc(struct GATE_DESCRIPTOR *gd, int offset, int selector, int ar);
 
-#define ADDR_IDT	0x0026f800
-#define LIMIT_IDT	0x000007ff
-#define ADDR_GDT	0x00270000
-#define LIMIT_GDT	0x0000ffff
-#define ADDR_BOOTPACK	0x00280000
-#define LIMIT_BOOTPACK	0x0007ffff
-#define AR_DATA32_RW	0x4092
-#define AR_CODE32_ER	0x409a
-#define AR_INTGATE32	0x008e
-
 /* int.h */
-void init_pic(void);
-
 #define PORT_PIC0	0x20
 #define PORT_PIC0_COMM	(PORT_PIC0)
 #define PORT_PIC0_DATA	(PORT_PIC0 + 1)
@@ -119,13 +117,9 @@ void init_pic(void);
 #define PIC0_EOI_PIC1	(PIC_EOI + 2)
 #define PIC1_EOI_MOUSE	(PIC_EOI + 4)
 
+void init_pic(void);
+
 /* keyboard.c */
-extern struct FIFO8 keyfifo;
-
-void inthandler21(int *esp);
-void wait_kbc_sendready(void);
-void init_keyboard(void);
-
 #define PORT_KBC_DATA		0x60
 #define PORT_KBC_STAT		0x64
 #define PORT_KBC_COMM		0x64
@@ -135,8 +129,14 @@ void init_keyboard(void);
 #define KBC_CONFIG_BYTE		0x47
 #define KBC_STAT_SEND_NOTREADY	0x02
 
+void inthandler21(int *esp);
+void wait_kbc_sendready(void);
+void init_keyboard(void);
+
+extern struct FIFO8 keyfifo;
+
 /* mouse.c */
-extern struct FIFO8 mousefifo;
+#define MOUSE_COMM_ENABLE	0xf4
 
 struct MOUSE_DEC {
 	unsigned char buf[3], phase;
@@ -147,4 +147,25 @@ void inthandler2c(int *esp);
 void enable_mouse(struct MOUSE_DEC *mdec);
 int mouse_decode(struct MOUSE_DEC *mdec, unsigned char data);
 
-#define MOUSE_COMM_ENABLE	0xf4
+extern struct FIFO8 mousefifo;
+
+/* memory.c */
+#define MEMMAN_FREES	4094 /* 4096 - 2 */
+#define MEMMAN_ADDR	0x003c0000
+
+struct FREEINFO {
+	unsigned int addr, size;
+};
+
+struct MEMMAN {
+	unsigned int frees, maxfrees, lostsize, losts;
+	struct FREEINFO free[MEMMAN_FREES];
+};
+
+unsigned int memtest(unsigned int start, unsigned int end);
+void memman_init(struct MEMMAN *man);
+unsigned int memman_total(struct MEMMAN *man);
+unsigned int memman_alloc(struct MEMMAN *man, unsigned int size);
+unsigned int memman_free(struct MEMMAN *man, unsigned int addr, unsigned int size);
+unsigned int memman_alloc_4k(struct MEMMAN *man, unsigned int size);
+unsigned int memman_free_4k(struct MEMMAN *man, unsigned int addr, unsigned int size);

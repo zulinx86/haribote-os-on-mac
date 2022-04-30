@@ -10,6 +10,7 @@ bits 32
 	global load_gdtr, load_idtr
 	global asm_inthandler21, asm_inthandler2c
 	extern inthandler21, inthandler2c
+	global memtest_sub
 
 section .text
 
@@ -128,3 +129,36 @@ asm_inthandler2c:
 	pop ds
 	pop es
 	iretd
+
+memtest_sub:		; unsigned int memtest_sub(unsigned int start, unsigned int end);
+	push edi
+	push esi
+	push ebx
+	mov eax,[esp+12+4]			; unsigned int i = start;
+	mov esi,0xaa55aa55			; unsigned int pat0 = 0xaa55aa55;
+	mov edi,0x55aa55aa			; unsigned int pat1 = 0x55aa55aa;
+.loop:
+	mov ebx,eax
+	add ebx,0xffc				; unsigned int *p = i + 0x0ffc;
+	mov edx,[ebx]				; unsigned int old = *p;
+	mov [ebx],esi				; *p = pat0;
+	xor dword [ebx],0xffffffff	; *p ^= 0xffffffff;
+	cmp edi,[ebx]				; if (*p != pat1)
+	jne .fin					;   goto .fin;
+	xor dword [ebx],0xffffffff	; *p ^= 0xffffffff;
+	cmp esi,[ebx]				; if (*p != pat0)
+	jne .fin					;   goto .fin;
+	mov [ebx],edx				; *p = old;
+	add eax,0x1000				; i += 0x1000;
+	cmp eax,[esp+12+8]			; if (i < end)
+	jb .loop					;   goto .loop;
+	pop ebx
+	pop esi
+	pop edi
+	ret
+.fin:
+	mov [ebx],edx				; *p = old;
+	pop ebx
+	pop esi
+	pop edi
+	ret

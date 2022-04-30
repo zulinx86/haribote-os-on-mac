@@ -1,7 +1,23 @@
 #include "mystdio.h"
 #include "bootpack.h"
 
+#define MEMMAN_FREES	4094 /* 4096 - 2 */
+#define MEMMAN_ADDR	0x003c0000
+
+struct FREEINFO {
+	unsigned int addr, size;
+};
+
+struct MEMMAN {
+	unsigned int frees, maxfrees, lostsize, losts;
+	struct FREEINFO free[MEMMAN_FREES];
+};
+
 unsigned int memtest(unsigned int start, unsigned int end);
+void memman_init(struct MEMMAN *man);
+unsigned int memman_total(struct MEMMAN *man);
+unsigned int memman_alloc(struct MEMMAN *man, unsigned int size);
+unsigned int memman_free(struct MEMMAN *man, unsigned int addr, unsigned int size);
 
 void HariMain(void)
 {
@@ -10,6 +26,8 @@ void HariMain(void)
 	unsigned char keybuf[32], mousebuf[128];
 	struct MOUSE_DEC mdec;
 	int mx, my, i;
+	unsigned int memtotal;
+	struct MEMMAN *memman = (struct MEMMAN *)MEMMAN_ADDR;
 
 	init_gdtidt();
 
@@ -34,8 +52,10 @@ void HariMain(void)
 	mysprintf(s, "(%3d, %3d)", mx, my);
 	putfonts(binfo->vram, binfo->scrnx, binfo->fonts, 0, 0, COL8_FFFFFF, s);
 
-	i = memtest(0x00400000, 0xc0000000) / (1024 * 1024);
-	mysprintf(s, "Memory: %d MB", i);
+	memtotal = memtest(0x00400000, 0xc0000000);
+	memman_init(memman);
+	memman_free(memman, 0x00400000, memtotal - 0x00400000);
+	mysprintf(s, "MemTotal: %d MB, MemFree: %d KB", memtotal / (1024 * 1024), memman_total(memman) / 1024);
 	putfonts(binfo->vram, binfo->scrnx, binfo->fonts, 0, 32, COL8_FFFFFF, s);
 
 	for (;;) {
@@ -117,4 +137,103 @@ unsigned int memtest(unsigned int start, unsigned int end)
 	}
 
 	return i;
+}
+
+void memman_init(struct MEMMAN *man)
+{
+	man->frees = 0;		/* number of free spaces */
+	man->maxfrees = 0;	/* max number of free spaces for tracking fragmentation */
+	man->lostsize = 0;	/* sum of size of lost spaces */
+	man->losts = 0;		/* number of lost spaces */
+}
+
+unsigned int memman_total(struct MEMMAN *man)
+{
+	unsigned int i, t = 0;
+
+	for (i = 0; i < man->frees; ++i)
+		t += man->free[i].size;
+
+	return t;
+}
+
+unsigned int memman_alloc(struct MEMMAN *man, unsigned int size)
+{
+	unsigned int i, a;
+
+	for (i = 0; i < man->frees; ++i) {
+		if (man->free[i].size >= size) {
+			a = man->free[i].addr;
+			man->free[i].addr += size;
+			man->free[i].size -= size;
+			if (man->free[i].size == 0) {
+				--man->frees;
+				for (; i < man->frees; ++i) {
+					man->free[i].addr = man->free[i + 1].addr;
+					man->free[i].size = man->free[i + 1].size;
+				}
+			}
+			return a;
+		}
+	}
+
+	return 0;
+}
+
+unsigned int memman_free(struct MEMMAN *man, unsigned int addr, unsigned int size)
+{
+	int i, j;
+
+	/* free[i - 1].addr < addr < free[i].addr */
+	for (i = 0; i < man->frees; ++i) {
+		if (man->free[i].addr > addr) break;
+	}
+
+	/* if it's not the head */
+	if (i > 0) {
+		/* merge with free[i - 1] */
+		if (man->free[i - 1].addr + man->free[i - 1].size == addr) {
+			man->free[i - 1].size += size;
+			/* merge with free[i] */
+			if (addr + size == man->free[i].addr) {
+				man->free[i - 1].size += man->free[i].size;
+				--man->frees;
+				for (; i < man->frees; ++i) {
+					man->free[i].addr = man->free[i + 1].addr;
+					man->free[i].size = man->free[i + 1].size;
+				}
+			}
+			return 0;
+		}
+	}
+
+	/* cannot merge it with free[i - 1] */
+	if (i < man->frees) {
+		/* merge with free[i] */
+		if (addr + size == man->free[i].addr) {
+			man->free[i].addr = addr;
+			man->free[i].size += size;
+			return 0;
+		}
+	}
+
+	/* cannot merge it with both free[i - 1] and free[i] */
+	if (man->frees < MEMMAN_FREES) {
+		for (j = man->frees; j > i; --j) {
+			man->free[j].addr = man->free[j - 1].addr;
+			man->free[j].size = man->free[j - 1].size;
+		}
+
+		++man->frees;
+		if (man->maxfrees < man->frees)
+			man->maxfrees = man->frees;
+
+		man->free[i].addr = addr;
+		man->free[i].size = size;
+		return 0;
+	}
+
+	++man->losts;
+	man->lostsize += size;
+	return 1;
 }

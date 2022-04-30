@@ -13,3 +13,5 @@
 | 0x0027_0000 | 0x0027_FFFF | 64 KiB      | GDT
 | 0x0028_0000 | 0x0030_0000 | 512 KiB     | .text section of bootpack
 | 0x0031_0000 |             |             | .data section of bootpack
+| 0x003C_0000 | 0x003C_7FFF | 64 KiB      | Memory manager
+| 0x0040_0000 |             |             | Free space

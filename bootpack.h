@@ -222,5 +222,11 @@ void sheet_free(struct SHEET *sht);
 #define PIT_BINARY	0b00000000
 #define PIT_BCD		0b00000001
 
+struct TIMERCTL {
+	unsigned int count;
+};
+
 void init_pit(void);
 void inthandler20(int *esp);
+
+extern struct TIMERCTL timerctl;

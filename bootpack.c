@@ -54,8 +54,8 @@ void HariMain(void)
 	sheet_slide(sht_mouse, mx, my);
 	sheet_slide(sht_win, 80, 72);
 	sheet_updown(sht_back, 0);
-	sheet_updown(sht_win, 1);
-	sheet_updown(sht_mouse, 2);
+	sheet_updown(sht_win, 2);
+	sheet_updown(sht_mouse, 1);
 
 	/* Print info */
 	mysprintf(s, "(%3d, %3d)", mx, my);

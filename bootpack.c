@@ -1,6 +1,8 @@
 #include "mystdio.h"
 #include "bootpack.h"
 
+void make_window(char *buf, int xsize, int ysize, char *title);
+
 void HariMain(void)
 {
 	struct BOOTINFO *binfo = (struct BOOTINFO *)ADDR_BOOTINFO;
@@ -11,8 +13,8 @@ void HariMain(void)
 	unsigned int memtotal;
 	struct MEMMAN *memman = (struct MEMMAN *)MEMMAN_ADDR;
 	struct SHTCTL *shtctl;
-	struct SHEET *sht_back, *sht_mouse;
-	char *buf_back, buf_mouse[256];
+	struct SHEET *sht_back, *sht_mouse, *sht_win;
+	char *buf_back, buf_mouse[256], *buf_win;
 
 	/* Initialize hardwares */
 	init_gdtidt();
@@ -35,17 +37,25 @@ void HariMain(void)
 	shtctl = shtctl_init(memman, binfo->vram, binfo->scrnx, binfo->scrny);
 	sht_back = sheet_alloc(shtctl);
 	sht_mouse = sheet_alloc(shtctl);
+	sht_win = sheet_alloc(shtctl);
 	buf_back = (char *)memman_alloc_4k(memman, binfo->scrnx * binfo->scrny);
+	buf_win = (char *)memman_alloc_4k(memman, 160 * 68);
 	sheet_setbuf(sht_back, buf_back, binfo->scrnx, binfo->scrny, -1);
 	sheet_setbuf(sht_mouse, buf_mouse, 16, 16, 99);
+	sheet_setbuf(sht_win, buf_win, 160, 68, -1);
 	init_screen(buf_back, binfo->scrnx, binfo->scrny);
 	init_mouse_cursor(buf_mouse, 99);
+	make_window(buf_win, 160, 68, "window");
+	putfonts(buf_win, 160, binfo->fonts, 24, 28, COL8_000000, "Welcome to");
+	putfonts(buf_win, 160, binfo->fonts, 24, 44, COL8_000000, "  Haribote-OS!");
 	mx = (binfo->scrnx - 16) / 2;
 	my = (binfo->scrny - 28 - 16) / 2;
 	sheet_slide(sht_back, 0, 0);
 	sheet_slide(sht_mouse, mx, my);
+	sheet_slide(sht_win, 80, 72);
 	sheet_updown(sht_back, 0);
-	sheet_updown(sht_mouse, 1);
+	sheet_updown(sht_win, 1);
+	sheet_updown(sht_mouse, 2);
 
 	/* Print info */
 	mysprintf(s, "(%3d, %3d)", mx, my);
@@ -91,6 +101,56 @@ void HariMain(void)
 					sheet_slide(sht_mouse, mx, my);
 				}
 			}
+		}
+	}
+}
+
+void make_window(char *buf, int xsize, int ysize, char *title)
+{
+	struct BOOTINFO *binfo = (struct BOOTINFO *)ADDR_BOOTINFO;
+	static char closebtn[14][16] = {
+		"OOOOOOOOOOOOOOO@",
+		"OQQQQQQQQQQQQQ$@",
+		"OQQQQQQQQQQQQQ$@",
+		"OQQQ@@QQQQ@@QQ$@",
+		"OQQQQ@@QQ@@QQQ$@",
+		"OQQQQQ@@@@QQQQ$@",
+		"OQQQQQQ@@QQQQQ$@",
+		"OQQQQQ@@@@QQQQ$@",
+		"OQQQQ@@QQ@@QQQ$@",
+		"OQQQ@@QQQQ@@QQ$@",
+		"OQQQQQQQQQQQQQ$@",
+		"OQQQQQQQQQQQQQ$@",
+		"O$$$$$$$$$$$$$$@",
+		"@@@@@@@@@@@@@@@@"
+	};
+	int x, y;
+	char c;
+
+	/* window frame */
+	boxfill(buf, xsize, COL8_C6C6C6, 0,         0,         xsize,     1        );
+	boxfill(buf, xsize, COL8_FFFFFF, 1,         1,         xsize - 1, 2        );
+	boxfill(buf, xsize, COL8_C6C6C6, 0,         0,         1,         ysize    );
+	boxfill(buf, xsize, COL8_FFFFFF, 1,         1,         2,         ysize - 1);
+	boxfill(buf, xsize, COL8_848484, xsize - 2, 1,         xsize - 1, ysize - 1);
+	boxfill(buf, xsize, COL8_000000, xsize - 1, 0,         xsize,     ysize    );
+	boxfill(buf, xsize, COL8_848484, 1,         ysize - 2, xsize - 1, ysize - 1);
+	boxfill(buf, xsize, COL8_000000, 0,         ysize - 1, xsize,     ysize    );
+	/* body area */
+	boxfill(buf, xsize, COL8_C6C6C6, 2,         2,         xsize - 2, ysize - 2);
+	/* title area */
+	boxfill(buf, xsize, COL8_000084, 3,         3,         xsize - 3, 21       );
+	putfonts(buf, xsize, binfo->fonts, 24, 4, COL8_FFFFFF, title);
+	for (y = 0; y < 14; ++y) {
+		for (x = 0; x < 16; ++x) {
+			c = closebtn[y][x];
+
+			if (c == '@') c = COL8_000000;
+			else if (c == '$') c = COL8_848484;
+			else if (c == 'Q') c = COL8_C6C6C6;
+			else c = COL8_FFFFFF;
+
+			buf[(5 + y) * xsize + (xsize - 21 + x)] = c;
 		}
 	}
 }

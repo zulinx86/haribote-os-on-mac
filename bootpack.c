@@ -10,7 +10,7 @@ void HariMain(void)
 	unsigned char keybuf[32], mousebuf[128];
 	struct MOUSE_DEC mdec;
 	int mx, my, i;
-	unsigned int memtotal;
+	unsigned int memtotal, count = 0;
 	struct MEMMAN *memman = (struct MEMMAN *)MEMMAN_ADDR;
 	struct SHTCTL *shtctl;
 	struct SHEET *sht_back, *sht_mouse, *sht_win;
@@ -39,23 +39,21 @@ void HariMain(void)
 	sht_mouse = sheet_alloc(shtctl);
 	sht_win = sheet_alloc(shtctl);
 	buf_back = (char *)memman_alloc_4k(memman, binfo->scrnx * binfo->scrny);
-	buf_win = (char *)memman_alloc_4k(memman, 160 * 68);
+	buf_win = (char *)memman_alloc_4k(memman, 160 * 52);
 	sheet_setbuf(sht_back, buf_back, binfo->scrnx, binfo->scrny, -1);
 	sheet_setbuf(sht_mouse, buf_mouse, 16, 16, 99);
-	sheet_setbuf(sht_win, buf_win, 160, 68, -1);
+	sheet_setbuf(sht_win, buf_win, 160, 52, -1);
 	init_screen(buf_back, binfo->scrnx, binfo->scrny);
 	init_mouse_cursor(buf_mouse, 99);
-	make_window(buf_win, 160, 68, "window");
-	putfonts(buf_win, 160, binfo->fonts, 24, 28, COL8_000000, "Welcome to");
-	putfonts(buf_win, 160, binfo->fonts, 24, 44, COL8_000000, "  Haribote-OS!");
+	make_window(buf_win, 160, 52, "counter");
 	mx = (binfo->scrnx - 16) / 2;
 	my = (binfo->scrny - 28 - 16) / 2;
 	sheet_slide(sht_back, 0, 0);
 	sheet_slide(sht_mouse, mx, my);
 	sheet_slide(sht_win, 80, 72);
 	sheet_updown(sht_back, 0);
-	sheet_updown(sht_win, 2);
-	sheet_updown(sht_mouse, 1);
+	sheet_updown(sht_win, 1);
+	sheet_updown(sht_mouse, 2);
 
 	/* Print info */
 	mysprintf(s, "(%3d, %3d)", mx, my);
@@ -65,9 +63,15 @@ void HariMain(void)
 	sheet_refresh(sht_back, 0, 0, binfo->scrnx, 48);
 
 	for (;;) {
+		++count;
+		mysprintf(s, "%010d", count);
+		boxfill(buf_win, 160, COL8_C6C6C6, 40, 28, 120, 44);
+		putfonts(buf_win, 160, binfo->fonts, 40, 28, COL8_000000, s);
+		sheet_refresh(sht_win, 40, 28, 120, 44);
+
 		io_cli();
 		if (fifo8_status(&keyfifo) + fifo8_status(&mousefifo) == 0) {
-			io_stihlt();
+			io_sti();
 		} else {
 			if (fifo8_status(&keyfifo)) {
 				i = fifo8_get(&keyfifo);

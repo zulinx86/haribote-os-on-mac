@@ -52,7 +52,7 @@ void HariMain(void)
 	putfonts(buf_back, binfo->scrnx, binfo->fonts, 0, 0, COL8_FFFFFF, s);
 	mysprintf(s, "MemTotal: %d MB, MemFree: %d KB", memtotal / (1024 * 1024), memman_total(memman) / 1024);
 	putfonts(buf_back, binfo->scrnx, binfo->fonts, 0, 32, COL8_FFFFFF, s);
-	sheet_refresh(shtctl);
+	sheet_refresh(shtctl, sht_back, 0, 0, binfo->scrnx, 48);
 
 	for (;;) {
 		io_cli();
@@ -65,7 +65,7 @@ void HariMain(void)
 				mysprintf(s, "%02X", i);
 				boxfill(buf_back, binfo->scrnx, COL8_008484, 0, 16, 16, 32);
 				putfonts(buf_back, binfo->scrnx, binfo->fonts, 0, 16, COL8_FFFFFF, s);
-				sheet_refresh(shtctl);
+				sheet_refresh(shtctl, sht_back, 0, 16, 16, 32);
 			} else if (fifo8_status(&mousefifo)) {
 				i = fifo8_get(&mousefifo);
 				io_sti();
@@ -76,6 +76,7 @@ void HariMain(void)
 					if (mdec.btn & 0x04) s[2] = 'C';
 					boxfill(buf_back, binfo->scrnx, COL8_008484, 32, 16, 32 + 15 * 8, 32);
 					putfonts(buf_back, binfo->scrnx, binfo->fonts, 32, 16, COL8_FFFFFF, s);
+					sheet_refresh(shtctl, sht_back, 32, 16, 32 + 15 * 8, 32);
 
 					mx += mdec.x;
 					my += mdec.y;
@@ -86,6 +87,7 @@ void HariMain(void)
 					mysprintf(s, "(%3d, %3d)", mx, my);
 					boxfill(buf_back, binfo->scrnx, COL8_008484, 0, 0, 80, 16);
 					putfonts(buf_back, binfo->scrnx, binfo->fonts, 0, 0, COL8_FFFFFF, s);
+					sheet_refresh(shtctl, sht_back, 0, 0, 80, 16);
 					sheet_slide(shtctl, sht_mouse, mx, my);
 				}
 			}

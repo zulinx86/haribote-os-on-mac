@@ -8,8 +8,8 @@ bits 32
 	global io_load_eflags, io_store_eflags
 	global load_cr0, store_cr0
 	global load_gdtr, load_idtr
-	global asm_inthandler21, asm_inthandler2c
-	extern inthandler21, inthandler2c
+	global asm_inthandler20, asm_inthandler21, asm_inthandler2c
+	extern inthandler20, inthandler21, inthandler2c
 	global memtest_sub
 
 section .text
@@ -97,6 +97,22 @@ load_idtr:			; void load_idtr(int limit, int addr);
 	mov [esp+6],ax
 	lidt [esp+6]
 	ret
+
+asm_inthandler20:
+	push es
+	push ds
+	pushad
+	mov eax,esp
+	push eax
+	mov ax,ss
+	mov ds,ax
+	mov es,ax
+	call inthandler20
+	pop eax
+	popad
+	pop ds
+	pop es
+	iretd
 
 asm_inthandler21:
 	push es

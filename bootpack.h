@@ -20,6 +20,7 @@ int load_cr0(void);
 void store_cr0(int cr0);
 void load_gdtr(int limit, int addr);
 void load_idtr(int limit, int addr);
+void asm_inthandler20(void);
 void asm_inthandler21(void);
 void asm_inthandler2c(void);
 unsigned int memtest_sub(unsigned int start, unsigned int end);
@@ -113,6 +114,7 @@ void set_gatedesc(struct GATE_DESCRIPTOR *gd, int offset, int selector, int ar);
 #define ICW4_SFNM	0x10		/* Special fully nested (not) */
 
 #define PIC_EOI		0x60		/* Specific End Of Interrupt (EOI) */
+#define PIC0_EOI_TIMER	(PIC_EOI)
 #define PIC0_EOI_KEY	(PIC_EOI + 1)
 #define PIC0_EOI_PIC1	(PIC_EOI + 2)
 #define PIC1_EOI_MOUSE	(PIC_EOI + 4)
@@ -193,3 +195,32 @@ void sheet_updown(struct SHEET *sht, int height);
 void sheet_refresh(struct SHEET *sht, int bx0, int by0, int bx1, int by1);
 void sheet_slide(struct SHEET *sht, int vx0, int vy0);
 void sheet_free(struct SHEET *sht);
+
+/* timer.c */
+#define PORT_PIT_CNT0	0x40
+#define PORT_PIT_CNT1	0x41
+#define PORT_PIT_CNT2	0x42
+#define PORT_PIT_COMM	0x43
+
+#define PIT_CHANNEL0	0b00000000
+#define PIT_CHANNEL1	0b01000000
+#define PIT_CHANNLE2	0b10000000
+#define PIT_WRITEBACK	0b11000000
+
+#define PIT_LATCH	0b00000000
+#define PIT_LO		0b00010000
+#define PIT_HI		0b00100000
+#define PIT_LOHI	0b00110000
+
+#define PIT_INTERRUPT	0b00000000
+#define PIT_ONESHOT	0b00000010
+#define PIT_RATEGEN	0b00000100
+#define PIT_SQUARE	0b00000110
+#define PIT_SOFT	0b00001000
+#define PIT_HARD	0b00001010
+
+#define PIT_BINARY	0b00000000
+#define PIT_BCD		0b00000001
+
+void init_pit(void);
+void inthandler20(int *esp);

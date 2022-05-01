@@ -19,10 +19,11 @@ void HariMain(void)
 	/* Initialize hardwares */
 	init_gdtidt();
 	init_pic();
+	io_sti();
 	fifo8_init(&keyfifo, 32, keybuf);
 	fifo8_init(&mousefifo, 128, mousebuf);
-	io_sti();
-	io_out8(PORT_PIC0_DATA, 0xf9);	/* enable PIC1 and PS/2 keyboard (0b11111001) */
+	init_pit();
+	io_out8(PORT_PIC0_DATA, 0xf8);	/* enable PIT, PIC1 and PS/2 keyboard (0b11111000) */
 	io_out8(PORT_PIC1_DATA, 0xef);	/* enable PS/2 mouse (0b11101111) */
 	init_keyboard();
 	enable_mouse(&mdec);

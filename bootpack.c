@@ -7,7 +7,8 @@ void HariMain(void)
 {
 	struct BOOTINFO *binfo = (struct BOOTINFO *)ADDR_BOOTINFO;
 	char s[40];
-	unsigned char keybuf[32], mousebuf[128];
+	struct FIFO8 timerfifo;
+	unsigned char keybuf[32], mousebuf[128], timerbuf[8];
 	struct MOUSE_DEC mdec;
 	int mx, my, i;
 	unsigned int memtotal;
@@ -22,11 +23,13 @@ void HariMain(void)
 	io_sti();
 	fifo8_init(&keyfifo, 32, keybuf);
 	fifo8_init(&mousefifo, 128, mousebuf);
+	fifo8_init(&timerfifo, 8, timerbuf);
 	init_pit();
 	io_out8(PORT_PIC0_DATA, 0xf8);	/* enable PIT, PIC1 and PS/2 keyboard (0b11111000) */
 	io_out8(PORT_PIC1_DATA, 0xef);	/* enable PS/2 mouse (0b11101111) */
 	init_keyboard();
 	enable_mouse(&mdec);
+	settimer(1000, &timerfifo, 1);
 
 	/* Initialize memory manager */
 	memtotal = memtest(0x00400000, 0xc0000000);
@@ -70,7 +73,7 @@ void HariMain(void)
 		sheet_refresh(sht_win, 40, 28, 120, 44);
 
 		io_cli();
-		if (fifo8_status(&keyfifo) + fifo8_status(&mousefifo) == 0) {
+		if (fifo8_status(&keyfifo) + fifo8_status(&mousefifo) + fifo8_status(&timerfifo) == 0) {
 			io_sti();
 		} else {
 			if (fifo8_status(&keyfifo)) {
@@ -104,6 +107,11 @@ void HariMain(void)
 					sheet_refresh(sht_back, 0, 0, 80, 16);
 					sheet_slide(sht_mouse, mx, my);
 				}
+			} else if (fifo8_status(&timerfifo)) {
+				i = fifo8_get(&timerfifo);
+				io_sti();
+				putfonts(buf_back, binfo->scrnx, binfo->fonts, 0, 64, COL8_FFFFFF, "10 sec");
+				sheet_refresh(sht_back, 0, 64, 48,80);
 			}
 		}
 	}

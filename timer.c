@@ -13,8 +13,9 @@ void init_pit(void)
 
 	timerctl.count = 0;
 	timerctl.next = 0xffffffff;
+	timerctl.using = 0;
 	for (i = 0; i < MAX_TIMERS; ++i)
-		timerctl.timer[i].flag = TIMER_FLAG_UNUSE;
+		timerctl.timers0[i].flag = TIMER_FLAG_UNUSE;
 }
 
 struct TIMER *timer_alloc(void)
@@ -22,9 +23,9 @@ struct TIMER *timer_alloc(void)
 	int i;
 
 	for (i = 0; i < MAX_TIMERS; ++i) {
-		if (timerctl.timer[i].flag == TIMER_FLAG_UNUSE) {
-			timerctl.timer[i].flag = TIMER_FLAG_ALLOC;
-			return &timerctl.timer[i];
+		if (timerctl.timers0[i].flag == TIMER_FLAG_UNUSE) {
+			timerctl.timers0[i].flag = TIMER_FLAG_ALLOC;
+			return &timerctl.timers0[i];
 		}
 	}
 
@@ -44,32 +45,52 @@ void timer_init(struct TIMER *timer, struct FIFO8 *fifo, unsigned char data)
 
 void timer_settime(struct TIMER *timer, unsigned int timeout)
 {
+	int eflags, i, j;
+
 	timer->timeout = timeout + timerctl.count;
 	timer->flag = TIMER_FLAG_USING;
-	if (timer->timeout < timerctl.next)
-		timerctl.next = timer->timeout;
+
+	eflags = io_load_eflags();
+	io_cli();
+
+	for (i = 0; i < timerctl.using; ++i)
+		if (timerctl.timers[i]->timeout >= timer->timeout)
+			break;
+
+	for (j = timerctl.using; j > i; --j)
+		timerctl.timers[j] = timerctl.timers[j - 1];
+
+	++timerctl.using;
+	timerctl.timers[i] = timer;
+	timerctl.next = timerctl.timers[0]->timeout;
+
+	io_store_eflags(eflags);
 }
 
 void inthandler20(int *esp)
 {
-	int i;
+	int i, j;
 
 	++timerctl.count;
 	if (timerctl.next > timerctl.count)
 		goto eoi;
 
-	timerctl.next = 0xffffffff;
-	for (i = 0; i < MAX_TIMERS; ++i) {
-		if (timerctl.timer[i].flag == TIMER_FLAG_USING) {
-			if (timerctl.timer[i].timeout <= timerctl.count) {
-				timerctl.timer[i].flag = TIMER_FLAG_ALLOC;
-				fifo8_put(timerctl.timer[i].fifo, timerctl.timer[i].data);
-			} else {
-				if (timerctl.timer[i].timeout < timerctl.next)
-					timerctl.next = timerctl.timer[i].timeout;
-			}
-		}
+	for (i = 0; i < timerctl.using; ++i) {
+		if (timerctl.timers[i]->timeout > timerctl.count)
+			break;
+
+		timerctl.timers[i]->flag = TIMER_FLAG_ALLOC;
+		fifo8_put(timerctl.timers[i]->fifo, timerctl.timers[i]->data);
 	}
+
+	timerctl.using -= i;
+	for (j = 0; j < timerctl.using; ++j)
+		timerctl.timers[j] = timerctl.timers[i + j];
+
+	if (timerctl.using > 0)
+		timerctl.next = timerctl.timers[0]->timeout;
+	else
+		timerctl.next = 0xffffffff;
 
 eoi:
 	io_out8(PORT_PIC0_COMM, PIC0_EOI_TIMER);

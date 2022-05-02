@@ -12,7 +12,7 @@ nasmfunc.o: nasmfunc.asm
 	nasm -f elf32 -o nasmfunc.o -l nasmfunc.lst nasmfunc.asm
 
 %.o: %.c
-	i386-elf-gcc -c -march=i486 -m32 -nostdlib -Wall -O2 -o $@ $<
+	i386-elf-gcc -c -march=i486 -m32 -nostdlib -Wall -O1 -o $@ $<
 
 bootpack.hrb: haribote.ld $(OBJS_BOOTPACK) $(HDRS_BOOTPACK)
 	i386-elf-gcc -march=i486 -m32 -nostdlib -Wall -T haribote.ld -o $@ $(OBJS_BOOTPACK) 

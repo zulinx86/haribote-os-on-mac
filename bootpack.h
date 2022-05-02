@@ -197,40 +197,53 @@ void sheet_slide(struct SHEET *sht, int vx0, int vy0);
 void sheet_free(struct SHEET *sht);
 
 /* timer.c */
-#define PORT_PIT_CNT0	0x40
-#define PORT_PIT_CNT1	0x41
-#define PORT_PIT_CNT2	0x42
-#define PORT_PIT_COMM	0x43
+#define PORT_PIT_CNT0		0x40
+#define PORT_PIT_CNT1		0x41
+#define PORT_PIT_CNT2		0x42
+#define PORT_PIT_COMM		0x43
 
-#define PIT_CHANNEL0	0b00000000
-#define PIT_CHANNEL1	0b01000000
-#define PIT_CHANNLE2	0b10000000
-#define PIT_WRITEBACK	0b11000000
+#define PIT_CHANNEL0		0b00000000
+#define PIT_CHANNEL1		0b01000000
+#define PIT_CHANNLE2		0b10000000
+#define PIT_WRITEBACK		0b11000000
 
-#define PIT_LATCH	0b00000000
-#define PIT_LO		0b00010000
-#define PIT_HI		0b00100000
-#define PIT_LOHI	0b00110000
+#define PIT_LATCH		0b00000000
+#define PIT_LO			0b00010000
+#define PIT_HI			0b00100000
+#define PIT_LOHI		0b00110000
 
-#define PIT_INTERRUPT	0b00000000
-#define PIT_ONESHOT	0b00000010
-#define PIT_RATEGEN	0b00000100
-#define PIT_SQUARE	0b00000110
-#define PIT_SOFT	0b00001000
-#define PIT_HARD	0b00001010
+#define PIT_INTERRUPT		0b00000000
+#define PIT_ONESHOT		0b00000010
+#define PIT_RATEGEN		0b00000100
+#define PIT_SQUARE		0b00000110
+#define PIT_SOFT		0b00001000
+#define PIT_HARD		0b00001010
 
-#define PIT_BINARY	0b00000000
-#define PIT_BCD		0b00000001
+#define PIT_BINARY		0b00000000
+#define PIT_BCD			0b00000001
 
-struct TIMERCTL {
-	unsigned int count;
+#define MAX_TIMERS		500
+#define TIMER_FLAG_UNUSE	0
+#define TIMER_FLAG_ALLOC	1
+#define TIMER_FLAG_USING	2
+
+struct TIMER {
 	unsigned int timeout;
+	unsigned char flag;
 	struct FIFO8 *fifo;
 	unsigned char data;
 };
 
+struct TIMERCTL {
+	unsigned int count;
+	struct TIMER timer[MAX_TIMERS];
+};
+
 void init_pit(void);
+struct TIMER *timer_alloc(void);
+void timer_free(struct TIMER *timer);
+void timer_init(struct TIMER *timer, struct FIFO8 *fifo, unsigned char data);
+void timer_settime(struct TIMER *timer, unsigned int timeout);
 void inthandler20(int *esp);
-void settimer(unsigned int timeout, struct FIFO8 *fifo, unsigned char data);
 
 extern struct TIMERCTL timerctl;

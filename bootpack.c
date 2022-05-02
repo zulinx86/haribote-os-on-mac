@@ -2,6 +2,7 @@
 #include "bootpack.h"
 
 void make_window(char *buf, int xsize, int ysize, char *title);
+void putfonts_sht(struct SHEET *sht, int x, int y, int c, int b, char *s, int l);
 
 void HariMain(void)
 {
@@ -75,16 +76,13 @@ void HariMain(void)
 
 	/* Print info */
 	mysprintf(s, "(%3d, %3d)", mx, my);
-	putfonts(buf_back, binfo->scrnx, binfo->fonts, 0, 0, COL8_FFFFFF, s);
+	putfonts_sht(sht_back, 0, 0, COL8_FFFFFF, COL8_008484, s, 10);
 	mysprintf(s, "MemTotal: %d MB, MemFree: %d KB", memtotal / (1024 * 1024), memman_total(memman) / 1024);
-	putfonts(buf_back, binfo->scrnx, binfo->fonts, 0, 32, COL8_FFFFFF, s);
-	sheet_refresh(sht_back, 0, 0, binfo->scrnx, 48);
+	putfonts_sht(sht_back, 0, 32, COL8_FFFFFF, COL8_008484, s, 40);
 
 	for (;;) {
 		mysprintf(s, "%010d", timerctl.count);
-		boxfill(buf_win, 160, COL8_C6C6C6, 40, 28, 120, 44);
-		putfonts(buf_win, 160, binfo->fonts, 40, 28, COL8_000000, s);
-		sheet_refresh(sht_win, 40, 28, 120, 44);
+		putfonts_sht(sht_win, 40, 28, COL8_000000, COL8_C6C6C6, s, 10);
 
 		io_cli();
 		if (fifo8_status(&keyfifo) + fifo8_status(&mousefifo) + fifo8_status(&timerfifo1) + fifo8_status(&timerfifo2) + fifo8_status(&timerfifo3) == 0) {
@@ -94,9 +92,7 @@ void HariMain(void)
 				i = fifo8_get(&keyfifo);
 				io_sti();
 				mysprintf(s, "%02X", i);
-				boxfill(buf_back, binfo->scrnx, COL8_008484, 0, 16, 16, 32);
-				putfonts(buf_back, binfo->scrnx, binfo->fonts, 0, 16, COL8_FFFFFF, s);
-				sheet_refresh(sht_back, 0, 16, 16, 32);
+				putfonts_sht(sht_back, 0, 16, COL8_FFFFFF, COL8_008484, s, 2);
 			} else if (fifo8_status(&mousefifo)) {
 				i = fifo8_get(&mousefifo);
 				io_sti();
@@ -105,9 +101,7 @@ void HariMain(void)
 					if (mdec.btn & 0x01) s[1] = 'L';
 					if (mdec.btn & 0x02) s[3] = 'R';
 					if (mdec.btn & 0x04) s[2] = 'C';
-					boxfill(buf_back, binfo->scrnx, COL8_008484, 32, 16, 32 + 15 * 8, 32);
-					putfonts(buf_back, binfo->scrnx, binfo->fonts, 32, 16, COL8_FFFFFF, s);
-					sheet_refresh(sht_back, 32, 16, 32 + 15 * 8, 32);
+					putfonts_sht(sht_back, 32, 16, COL8_FFFFFF, COL8_008484, s, 15);
 
 					mx += mdec.x;
 					my += mdec.y;
@@ -116,21 +110,17 @@ void HariMain(void)
 					if (mx >= binfo->scrnx) mx = binfo->scrnx - 1;
 					if (my >= binfo->scrny) my = binfo->scrny - 1;
 					mysprintf(s, "(%3d, %3d)", mx, my);
-					boxfill(buf_back, binfo->scrnx, COL8_008484, 0, 0, 80, 16);
-					putfonts(buf_back, binfo->scrnx, binfo->fonts, 0, 0, COL8_FFFFFF, s);
-					sheet_refresh(sht_back, 0, 0, 80, 16);
+					putfonts_sht(sht_back, 0, 0, COL8_FFFFFF, COL8_008484, s, 10);
 					sheet_slide(sht_mouse, mx, my);
 				}
 			} else if (fifo8_status(&timerfifo1)) {
 				i = fifo8_get(&timerfifo1);
 				io_sti();
-				putfonts(buf_back, binfo->scrnx, binfo->fonts, 0, 64, COL8_FFFFFF, "10 sec");
-				sheet_refresh(sht_back, 0, 64, 48, 80);
+				putfonts_sht(sht_back, 0, 64, COL8_FFFFFF, COL8_008484, "10 sec", 6);
 			} else if (fifo8_status(&timerfifo2)) {
 				i = fifo8_get(&timerfifo2);
 				io_sti();
-				putfonts(buf_back, binfo->scrnx, binfo->fonts, 0, 80, COL8_FFFFFF, "3 sec");
-				sheet_refresh(sht_back, 0, 80, 40, 96);
+				putfonts_sht(sht_back, 0, 80, COL8_FFFFFF, COL8_008484, "3 sec", 5);
 			} else if (fifo8_status(&timerfifo3)) {
 				i = fifo8_get(&timerfifo3);
 				io_sti();
@@ -196,4 +186,12 @@ void make_window(char *buf, int xsize, int ysize, char *title)
 			buf[(5 + y) * xsize + (xsize - 21 + x)] = c;
 		}
 	}
+}
+
+void putfonts_sht(struct SHEET *sht, int x, int y, int c, int b, char *s, int l)
+{
+	struct BOOTINFO *binfo = (struct BOOTINFO *)ADDR_BOOTINFO;
+	boxfill(sht->buf, sht->bxsize, b, x, y, x + l * 8, y + 16);
+	putfonts(sht->buf, sht->bxsize, binfo->fonts, x, y, c, s);
+	sheet_refresh(sht, x, y, x + l * 8, y + 16);
 }

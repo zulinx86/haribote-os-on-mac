@@ -1,14 +1,15 @@
 #include "bootpack.h"
 
-struct FIFO8 keyfifo;
+struct FIFO32 *keyfifo;
+int keybase;
 
 void inthandler21(int *esp)
 {
-	unsigned char data;
+	int data;
 
 	data = io_in8(PORT_KBC_DATA);
 	io_out8(PORT_PIC0_COMM, PIC0_EOI_KEY);
-	fifo8_put(&keyfifo, data);
+	fifo32_put(keyfifo, data + keybase);
 }
 
 void wait_kbc_sendready(void)
@@ -18,8 +19,10 @@ void wait_kbc_sendready(void)
 			break;
 }
 
-void init_keyboard(void)
+void init_keyboard(struct FIFO32 *fifo, int base)
 {
+	keyfifo = fifo;
+	keybase = base;
 	wait_kbc_sendready();
 	io_out8(PORT_KBC_COMM, KBC_COMM_WRITE_CONFIG);
 	wait_kbc_sendready();

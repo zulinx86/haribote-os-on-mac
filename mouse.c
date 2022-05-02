@@ -1,19 +1,23 @@
 #include "bootpack.h"
 
-struct FIFO8 mousefifo;
+struct FIFO32 *mousefifo;
+int mousebase;
 
 void inthandler2c(int *esp)
 {
-	unsigned char data;
+	int data;
 
 	data = io_in8(PORT_KBC_DATA);
 	io_out8(PORT_PIC1_COMM, PIC1_EOI_MOUSE);
 	io_out8(PORT_PIC0_COMM, PIC0_EOI_PIC1);
-	fifo8_put(&mousefifo, data);
+	fifo32_put(mousefifo, data + mousebase);
 }
 
-void enable_mouse(struct MOUSE_DEC *mdec)
+void enable_mouse(struct FIFO32 *fifo, int base, struct MOUSE_DEC *mdec)
 {
+	mousefifo = fifo;
+	mousebase = base;
+
 	mdec->phase = 0;
 
 	wait_kbc_sendready();

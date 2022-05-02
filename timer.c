@@ -5,6 +5,7 @@ struct TIMERCTL timerctl;
 void init_pit(void)
 {
 	int i;
+	struct TIMER *t;
 
 	io_out8(PORT_PIT_COMM, PIT_CHANNEL0 | PIT_LOHI | PIT_RATEGEN | PIT_BINARY);
 	/* 0x2e9c = 11932 => 100 Hz = every 10 ms */
@@ -12,10 +13,16 @@ void init_pit(void)
 	io_out8(PORT_PIT_CNT0, 0x2e);
 
 	timerctl.count = 0;
-	timerctl.next = 0xffffffff;
-	timerctl.using = 0;
 	for (i = 0; i < MAX_TIMERS; ++i)
 		timerctl.timers0[i].flag = TIMER_FLAG_UNUSE;
+
+	/* sentinel */
+	t = timer_alloc();
+	t->timeout = 0xffffffff;
+	t->flag = TIMER_FLAG_USING;
+	t->next = 0;
+	timerctl.t0 = t;
+	timerctl.next = 0xffffffff;
 }
 
 struct TIMER *timer_alloc(void)
@@ -54,66 +61,39 @@ void timer_settime(struct TIMER *timer, unsigned int timeout)
 	eflags = io_load_eflags();
 	io_cli();
 
-	++timerctl.using;
-	if (timerctl.using == 1) {
-		timerctl.t0 = timer;
-		timer->next = 0;
-		timerctl.next = timer->timeout;
-		goto end;
-	}
-
-	t = timerctl.t0;
-	if (timer->timeout <= t->timeout) {
-		timerctl.t0 = timer;
-		timer->next = t;
-		timerctl.next = timer->timeout;
-		goto end;
-	}
-
-	for (;;) {
-		s = t;
-		t = t->next;
-
-		if (t == 0) break;
+	for (s = 0, t = timerctl.t0; t != 0; s = t, t = t->next) {
 		if (timer->timeout <= t->timeout) {
-			s->next = timer;
+			if (s == 0) {
+				timerctl.t0 = timer;
+				timerctl.next = timer->timeout;
+			} else {
+				s->next = timer;
+			}
 			timer->next = t;
-			goto end;
+			break;
 		}
 	}
 
-	s->next = timer;
-	timer->next = 0;
-
-end:
 	io_store_eflags(eflags);
 }
 
 void inthandler20(int *esp)
 {
-	int i;
 	struct TIMER *timer;
 
 	++timerctl.count;
 	if (timerctl.next > timerctl.count)
 		goto end;
 
-	timer = timerctl.t0;
-	for (i = 0; i < timerctl.using; ++i) {
+	for (timer = timerctl.t0; timer != 0; timer = timer->next) {
 		if (timer->timeout > timerctl.count)
 			break;
-
 		timer->flag = TIMER_FLAG_ALLOC;
 		fifo32_put(timer->fifo, timer->data);
-		timer = timer->next;
 	}
-	timerctl.t0 = timer;
 
-	timerctl.using -= i;
-	if (timerctl.using > 0)
-		timerctl.next = timerctl.t0->timeout;
-	else
-		timerctl.next = 0xffffffff;
+	timerctl.t0 = timer;
+	timerctl.next = timerctl.t0->timeout;
 
 end:
 	io_out8(PORT_PIC0_COMM, PIC0_EOI_TIMER);

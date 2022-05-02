@@ -59,7 +59,7 @@ void HariMain(void)
 	sheet_setbuf(sht_win, buf_win, 160, 52, -1);
 	init_screen(buf_back, binfo->scrnx, binfo->scrny);
 	init_mouse_cursor(buf_mouse, 99);
-	make_window(buf_win, 160, 52, "counter");
+	make_window(buf_win, 160, 52, "window");
 	mx = (binfo->scrnx - 16) / 2;
 	my = (binfo->scrny - 28 - 16) / 2;
 	sheet_slide(sht_back, 0, 0);
@@ -76,21 +76,21 @@ void HariMain(void)
 	putfonts_sht(sht_back, 0, 32, COL8_FFFFFF, COL8_008484, s, 40);
 
 	for (;;) {
-		mysprintf(s, "%010d", timerctl.count);
-		putfonts_sht(sht_win, 40, 28, COL8_000000, COL8_C6C6C6, s, 10);
-
 		io_cli();
 		if (fifo32_status(&fifo) == 0) {
-			io_sti();
+			io_stihlt();
 		} else {
 			i = fifo32_get(&fifo);
 			io_sti();
 
 			if (KEY_BASE <= i && i < KEY_BASE + 256) {
-				mysprintf(s, "%02X", i);
+				mysprintf(s, "%02X", i - KEY_BASE);
 				putfonts_sht(sht_back, 0, 16, COL8_FFFFFF, COL8_008484, s, 2);
+				
+				if (i == 0x1e + 256)
+					putfonts_sht(sht_win, 40, 28, COL8_000000, COL8_C6C6C6, "A", 1);
 			} else if (MOUSE_BASE <= i && i < MOUSE_BASE + 256) {
-				if (mouse_decode(&mdec, i) != 0) {
+				if (mouse_decode(&mdec, i - MOUSE_BASE) != 0) {
 					mysprintf(s, "[lcr] %4d %4d", mdec.x, mdec.y);
 					if (mdec.btn & 0x01) s[1] = 'L';
 					if (mdec.btn & 0x02) s[3] = 'R';

@@ -32,15 +32,15 @@
 	org 0xc200
 
 	; Set video mode
-	mov al,0x13			; 320x200 256-color graphics (VGA)
-	mov ah,0x00			; function to set video mode
+	mov bx,0x4105		; VBE graphics (1024x768 8-color graphics)
+	mov ax,0x4f02		; function to set video mode
 	int 0x10			; BIOS interruption for video display
 
 	; Save boot info
 	mov byte [vmode],8
-	mov word [scrnx],320
-	mov word [scrny],200
-	mov dword [vram],0x000a0000
+	mov word [scrnx],1024
+	mov word [scrny],768
+	mov dword [vram],0xfd000000
 
 	; Get keyboard flags
 	mov ah,0x02			; function to read keyboard flags

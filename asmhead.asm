@@ -27,27 +27,74 @@
 	realmode_cache equ 0x00008000	; where disk cache is placed in real mode
 	protmode_cache equ 0x00100000	; where disk cache is placed in protected mode
 
+; VBE (Video BIOS Extensions)
+
+	vbemode equ 0x0103
+	; 0x0100 :  640 x  400 x 8 bit color
+	; 0x0101 :  640 x  480 x 8 bit color
+	; 0x0103 :  800 x  600 x 8 bit color
+	; 0x0105 : 1024 x  768 x 8 bit color
+	; 0x0107 : 1280 x 1024 x 8 bit color
+
 ; Program
 
 	org 0xc200
 
-	; Set video mode
-	mov bx,0x4105		; VBE graphics (1024x768 8-color graphics)
+	; Check the existence of VBE
+	mov ax,0x9000
+	mov es,ax
+	mov di,0
+	mov ax,0x4f00		; function to get controller info
+	int 0x10			; BIOS interruption for video display
+	cmp ax,0x004f
+	jne scrn320
+
+	; Check if VBE is greater than or equal to version 2.0
+	mov ax,[es:di+4]
+	cmp ax,0x0200
+	jb scrn320
+
+	; Check if the display mode is available
+	mov cx,vbemode
+	mov ax,0x4f01		; function to get mode info
+	int 0x10			; BIOS interruption for video display
+	cmp ax,0x004f
+	jne scrn320
+
+	; Check info about the display mode
+	cmp byte [es:di+0x19],8
+	jne scrn320			; 8 bit color or not
+	cmp byte [es:di+0x1b],4
+	jne scrn320			; palette mode or not
+	mov ax,[es:di+0x00]
+	and ax,0x0080		; able to be added to 0x4000 or not
+	jz scrn320
+
+	; Switch to the display mode
+	mov bx,vbemode+0x4000
 	mov ax,0x4f02		; function to set video mode
 	int 0x10			; BIOS interruption for video display
+	mov byte[vmode],8
+	mov ax,[es:di+0x12]
+	mov [scrnx],ax
+	mov ax,[es:di+0x14]
+	mov [scrny],ax
+	mov eax,[es:di+0x28]
+	mov [vram],eax
+	jmp get_bitmap_fonts
 
-	; Save boot info
+	; VGA graphics (320 x 200 x 8 bit color)
+scrn320:
+	mov al,0x13
+	mov ah,0x00
+	int 0x10
 	mov byte [vmode],8
-	mov word [scrnx],1024
-	mov word [scrny],768
-	mov dword [vram],0xfd000000
-
-	; Get keyboard flags
-	mov ah,0x02			; function to read keyboard flags
-	int 0x16			; BIOS interruption for keyboard
-	mov [leds],al
+	mov word [scrnx],320
+	mov word [scrny],200
+	mov dword [vram],0x000a0000
 
 	; Get bitmap fonts from BIOS
+get_bitmap_fonts:
 	mov ah,0x11			; character generator routine
 	mov al,0x30			; get current character generator information
 	mov bh,0x06			; ROM 8x16 character table pointer
@@ -60,6 +107,11 @@
 	mov bx,bp			; ebx = bp
 	add eax,ebx			; eax += ebx
 	mov [fonts],eax
+
+	; Get keyboard flags
+	mov ah,0x02			; function to read keyboard flags
+	int 0x16			; BIOS interruption for keyboard
+	mov [leds],al
 
 	; Ingore interruptions
 	mov al,0xff

@@ -18,6 +18,14 @@ void HariMain(void)
 	struct SHEET *sht_back, *sht_mouse, *sht_win;
 	char *buf_back, buf_mouse[256], *buf_win;
 	struct TIMER *timer1, *timer2, *timer3;
+	static char keytable[0x54] = {
+		 0,   0,  '1', '2', '3', '4', '5', '6', '7',  '8', '9', '0', '-', '=',  0,   0,
+		'Q', 'W', 'E', 'R', 'T', 'Y', 'U', 'I', 'O',  'P', '[', ']',  0,   0,  'A', 'S',
+		'D', 'F', 'G', 'H', 'J', 'K', 'L', ';', '\'', '`',  0, '\\', 'Z', 'X', 'C', 'V',
+		'B', 'N', 'M', ',', '.', '/',  0,  '*',   0,   ' ',  0,   0,   0,   0,   0,   0,
+		 0,   0,   0,   0,   0,   0,   0,  '7', '8',  '9', '-', '4', '5', '6', '+', '1',
+		'2', '3', '0', '.'
+	};
 
 	/* Initialize hardwares */
 	init_gdtidt();
@@ -86,9 +94,14 @@ void HariMain(void)
 			if (KEY_BASE <= i && i < KEY_BASE + 256) {
 				mysprintf(s, "%02X", i - KEY_BASE);
 				putfonts_sht(sht_back, 0, 16, COL8_FFFFFF, COL8_008484, s, 2);
-				
-				if (i == 0x1e + 256)
-					putfonts_sht(sht_win, 40, 28, COL8_000000, COL8_C6C6C6, "A", 1);
+
+				if (i < 0x54 + KEY_BASE) {
+					if (keytable[i - KEY_BASE] != 0) {
+						s[0] = keytable[i - KEY_BASE];
+						s[1] = 0;
+						putfonts_sht(sht_win, 40, 28, COL8_000000, COL8_C6C6C6, s, 1);
+					}
+				}
 			} else if (MOUSE_BASE <= i && i < MOUSE_BASE + 256) {
 				if (mouse_decode(&mdec, i - MOUSE_BASE) != 0) {
 					mysprintf(s, "[lcr] %4d %4d", mdec.x, mdec.y);

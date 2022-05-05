@@ -11,7 +11,7 @@ bits 32
 	global asm_inthandler20, asm_inthandler21, asm_inthandler2c
 	extern inthandler20, inthandler21, inthandler2c
 	global memtest_sub
-	global taskswitch4
+	global taskswitch3, taskswitch4
 
 section .text
 
@@ -182,6 +182,10 @@ memtest_sub:		; unsigned int memtest_sub(unsigned int start, unsigned int end);
 	pop ebx
 	pop esi
 	pop edi
+	ret
+
+taskswitch3:		; void taskswitch3(void);
+	jmp 3*8:0
 	ret
 
 taskswitch4:		; void taskswitch4(void);

@@ -7,10 +7,11 @@ bits 32
 	global io_out8, io_out16, io_out32
 	global io_load_eflags, io_store_eflags
 	global load_cr0, store_cr0
-	global load_gdtr, load_idtr
+	global load_gdtr, load_idtr, load_tr
 	global asm_inthandler20, asm_inthandler21, asm_inthandler2c
 	extern inthandler20, inthandler21, inthandler2c
 	global memtest_sub
+	global taskswitch4
 
 section .text
 
@@ -98,6 +99,10 @@ load_idtr:			; void load_idtr(int limit, int addr);
 	lidt [esp+6]
 	ret
 
+load_tr:			; void load_tr(int tr);
+	ltr [esp+4]
+	ret
+
 asm_inthandler20:
 	push es
 	push ds
@@ -177,4 +182,8 @@ memtest_sub:		; unsigned int memtest_sub(unsigned int start, unsigned int end);
 	pop ebx
 	pop esi
 	pop edi
+	ret
+
+taskswitch4:		; void taskswitch4(void);
+	jmp 4*8:0
 	ret

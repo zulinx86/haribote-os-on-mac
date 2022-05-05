@@ -20,10 +20,12 @@ int load_cr0(void);
 void store_cr0(int cr0);
 void load_gdtr(int limit, int addr);
 void load_idtr(int limit, int addr);
+void load_tr(int tr);
 void asm_inthandler20(void);
 void asm_inthandler21(void);
 void asm_inthandler2c(void);
 unsigned int memtest_sub(unsigned int start, unsigned int end);
+void taskswitch4(void);
 
 /* fifo.c */
 #define TIMER_BASE	0
@@ -79,6 +81,7 @@ void putblock(char *vram, int xsize, int pxsize, int pysize, int px0, int py0, c
 #define LIMIT_BOOTPACK	0x0007ffff
 #define AR_DATA32_RW	0x4092
 #define AR_CODE32_ER	0x409a
+#define AR_TSS32	0x0089
 #define AR_INTGATE32	0x008e
 
 struct SEGMENT_DESCRIPTOR {

@@ -27,7 +27,7 @@ void HariMain(void)
 	struct SHTCTL *shtctl;
 	struct SHEET *sht_back, *sht_mouse, *sht_win;
 	char *buf_back, buf_mouse[256], *buf_win;
-	struct TIMER *timer1, *timer2, *timer3;
+	struct TIMER *timer1, *timer2, *timer3, *timer_ts;
 	static char keytable[0x54] = {
 		 0,   0,  '1', '2', '3', '4', '5', '6', '7',  '8', '9', '0', '-', '=',  0,   0,
 		'Q', 'W', 'E', 'R', 'T', 'Y', 'U', 'I', 'O',  'P', '[', ']',  0,   0,  'A', 'S',
@@ -56,12 +56,15 @@ void HariMain(void)
 	timer1 = timer_alloc();
 	timer2 = timer_alloc();
 	timer3 = timer_alloc();
+	timer_ts = timer_alloc();
 	timer_init(timer1, &fifo, 10);
 	timer_init(timer2, &fifo, 3);
 	timer_init(timer3, &fifo, 1);
+	timer_init(timer_ts, &fifo, 2);
 	timer_settime(timer1, 1000);
 	timer_settime(timer2, 300);
 	timer_settime(timer3, 50);
+	timer_settime(timer_ts, 2);
 
 	/* Initialize memory manager */
 	memtotal = memtest(0x00400000, 0xc0000000);
@@ -131,7 +134,10 @@ void HariMain(void)
 			i = fifo32_get(&fifo);
 			io_sti();
 
-			if (KEY_BASE <= i && i < KEY_BASE + 256) {
+			if (i == 2) { /* task switch */
+				farjmp(0, 4 * 8);
+				timer_settime(timer_ts, 2);
+			} else if (KEY_BASE <= i && i < KEY_BASE + 256) { /* keyboard */
 				i -= KEY_BASE;
 
 				mysprintf(s, "%02X", i);
@@ -152,7 +158,7 @@ void HariMain(void)
 					boxfill(sht_win->buf, sht_win->bxsize, cursor_c, cursor_x, 28, cursor_x + 8, 44);
 					sheet_refresh(sht_win, cursor_x, 28, cursor_x + 8, 44);
 				}
-			} else if (MOUSE_BASE <= i && i < MOUSE_BASE + 256) {
+			} else if (MOUSE_BASE <= i && i < MOUSE_BASE + 256) { /* mouse */
 				if (mouse_decode(&mdec, i - MOUSE_BASE) != 0) {
 					mysprintf(s, "[lcr] %4d %4d", mdec.x, mdec.y);
 					if (mdec.btn & 0x01) s[1] = 'L';
@@ -173,12 +179,11 @@ void HariMain(void)
 					if (mdec.btn & 0x01)
 						sheet_slide(sht_win, mx - 80, my - 8);
 				}
-			} else if (i == 10) {
+			} else if (i == 10) { /* 10s timer */
 				putfonts_sht(sht_back, 0, 64, COL8_FFFFFF, COL8_008484, "10 sec", 6);
-				taskswitch4();
-			} else if (i == 3) {
+			} else if (i == 3) { /* 3s timer */
 				putfonts_sht(sht_back, 0, 80, COL8_FFFFFF, COL8_008484, "3 sec", 5);
-			} else if (i <= 1) {
+			} else if (i <= 1) { /* cursor */
 				if (i != 0) {
 					timer_init(timer3, &fifo, 0);
 					cursor_c = COL8_000000;
@@ -269,13 +274,13 @@ void make_textbox(struct SHEET *sht, int x0, int y0, int sx, int sy, int c)
 void task_b_main(void)
 {
 	struct FIFO32 fifo;
-	struct TIMER *timer;
+	struct TIMER *timer_ts;
 	int i, fifobuf[128];
 
 	fifo32_init(&fifo, 128, fifobuf);
-	timer = timer_alloc();
-	timer_init(timer, &fifo, 1);
-	timer_settime(timer, 500);
+	timer_ts = timer_alloc();
+	timer_init(timer_ts, &fifo, 2);
+	timer_settime(timer_ts, 2);
 
 	for (;;) {
 		io_cli();
@@ -285,7 +290,10 @@ void task_b_main(void)
 			i = fifo32_get(&fifo);
 			io_sti();
 
-			if (i == 1) taskswitch3();
+			if (i == 2) {
+				farjmp(0, 3 * 8);
+				timer_settime(timer_ts, 2);
+			}
 		}
 	}
 }

@@ -11,7 +11,7 @@ bits 32
 	global asm_inthandler20, asm_inthandler21, asm_inthandler2c
 	extern inthandler20, inthandler21, inthandler2c
 	global memtest_sub
-	global taskswitch3, taskswitch4
+	global farjmp
 
 section .text
 
@@ -184,10 +184,8 @@ memtest_sub:		; unsigned int memtest_sub(unsigned int start, unsigned int end);
 	pop edi
 	ret
 
-taskswitch3:		; void taskswitch3(void);
-	jmp 3*8:0
-	ret
-
-taskswitch4:		; void taskswitch4(void);
-	jmp 4*8:0
+farjmp:			; void farjmp(int eip, int cs);
+	; [esp+4]: eip
+	; [esp+8]: cs
+	jmp far [esp+4]
 	ret
